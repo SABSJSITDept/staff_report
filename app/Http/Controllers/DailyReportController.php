@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\DailyReport;
 use App\Models\DailyReportTask;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DailyReportController extends Controller
 {
@@ -25,11 +28,52 @@ class DailyReportController extends Controller
         if (Auth::user()->role === 'staff') {
             $query->where('staff_id', Auth::id());
         }
-        // Admin aur Manager sabhi ki reports dekh sakte hain
 
         $reports = $query->get();
 
-        return view('DailyReport.DailyReportView', compact('reports'));
+        // Fetch staff for dropdown (Admin/Manager only)
+        $allStaff = [];
+        if (Auth::user()->role !== 'staff') {
+            $allStaff = User::whereIn('role', ['staff', 'manager', 'admin'])
+                ->orderBy('name')
+                ->get();
+        }
+
+        return view('DailyReport.DailyReportView', compact('reports', 'allStaff'));
+    }
+
+    public function export(Request $request)
+    {
+        $type   = $request->get('type', 'excel'); // excel or pdf
+        $staffId = $request->get('staff_id');
+        $start  = $request->get('start_date');
+        $end    = $request->get('end_date');
+
+        $query = DailyReport::with(['staff', 'tasks'])
+            ->orderBy('report_date');
+
+        if (Auth::user()->role === 'staff') {
+            $query->where('staff_id', Auth::id());
+        } elseif ($staffId) {
+            $query->where('staff_id', $staffId);
+        }
+
+        if ($start) $query->where('report_date', '>=', $start);
+        if ($end)   $query->where('report_date', '<=', $end);
+
+        $reports = $query->get();
+
+        if ($reports->isEmpty()) {
+            return back()->with('error', 'Chune gaye dates ke liye koi data nahi mila.');
+        }
+
+        if ($type === 'pdf') {
+            $pdf = Pdf::loadView('DailyReport.DailyReportPdf', compact('reports', 'start', 'end'));
+            return $pdf->download('Daily_Report_' . now()->format('YmdHis') . '.pdf');
+        }
+
+        // For Excel, we'll use a custom export class
+        return Excel::download(new \App\Exports\DailyReportExport($reports), 'Daily_Report_' . now()->format('YmdHis') . '.xlsx');
     }
 
     public function create()

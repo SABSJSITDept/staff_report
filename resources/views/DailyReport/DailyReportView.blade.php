@@ -127,37 +127,83 @@
     </div>
 </div>
 
-{{-- ===================== FILTER BAR ===================== --}}
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3.5 mb-5 flex flex-wrap items-center gap-3">
-    <div class="flex items-center gap-2.5 flex-1 min-w-[180px] bg-gray-50 rounded-xl px-3.5 py-2 border border-gray-100 focus-within:border-indigo-300 focus-within:bg-white transition">
-        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <input type="text" id="search-input"
-               placeholder="{{ Auth::user()->role === 'staff' ? 'Search by date or task...' : 'Search by staff name...' }}"
-               class="w-full text-sm bg-transparent outline-none text-gray-700 placeholder-gray-400" />
-    </div>
-
-    <div class="flex items-center gap-2">
-        <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3.5 py-2 border border-gray-100 focus-within:border-indigo-300 focus-within:bg-white transition">
-            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <input type="date" id="date-filter"
-                   class="text-sm bg-transparent outline-none text-gray-700" />
+{{-- ===================== FILTER & EXPORT BAR ===================== --}}
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+    <form action="{{ route('daily-report.export') }}" method="GET" id="export-form" class="flex flex-wrap items-end gap-4">
+        @if(Auth::user()->role !== 'staff')
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Staff Member</label>
+            <div class="relative">
+                <select name="staff_id" id="staff-filter" onchange="applyFilters()"
+                        class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none transition appearance-none">
+                    <option value="">All Staff</option>
+                    @foreach($allStaff as $s)
+                        <option value="{{ $s->id }}" data-name="{{ strtolower($s->name) }}">{{ $s->name }} ({{ $s->role }})</option>
+                    @endforeach
+                </select>
+                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </div>
+            </div>
         </div>
-        <button onclick="clearFilters()"
-                class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 border border-gray-100 hover:border-indigo-200 px-3 py-2 rounded-xl transition">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            Clear
-        </button>
-    </div>
+        @endif
 
-    <div class="ml-auto">
-        <span id="result-count" class="text-xs text-gray-400 font-medium">{{ $reports->count() }} reports</span>
-    </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Start Date</label>
+            <input type="date" name="start_date" id="start-date" onchange="applyFilters()"
+                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none transition" />
+        </div>
+
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">End Date</label>
+            <input type="date" name="end_date" id="end-date" onchange="applyFilters()"
+                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none transition" />
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="setQuickRange('week')"
+                    class="h-[42px] px-4 flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition">
+                Weekly
+            </button>
+            <button type="button" onclick="setQuickRange('month')"
+                    class="h-[42px] px-4 flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition">
+                Monthly
+            </button>
+            
+            <button type="button" onclick="clearFilters()"
+                    class="h-[42px] px-4 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 border border-gray-100 rounded-xl transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Reset
+            </button>
+            
+            <div class="relative group">
+                <button type="button" class="h-[42px] px-5 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export Report
+                </button>
+                <div class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block z-50 animate-in fade-in slide-in-from-bottom-2">
+                    <button type="submit" name="type" value="excel" class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Download Excel
+                    </button>
+                    <button type="submit" name="type" value="pdf" class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
 {{-- ===================== TABLE ===================== --}}
@@ -173,6 +219,7 @@
                     @endif
                     <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                     <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tasks</th>
+                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Time</th>
                     <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Pending Work</th>
                     <th class="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pr-6">Actions</th>
                 </tr>
@@ -185,6 +232,7 @@
                     $pct        = $taskCount > 0 ? round(($doneCount / $taskCount) * 100) : 0;
                 @endphp
                 <tr class="hover:bg-gray-50/80 transition-colors report-row group"
+                    data-staff-id="{{ $report->staff_id }}"
                     data-name="{{ strtolower($report->staff->name ?? '') }}"
                     data-date="{{ $report->report_date->format('Y-m-d') }}">
 
@@ -251,6 +299,28 @@
                                 No tasks
                             </span>
                         @endif
+                    </td>
+
+                    <td class="px-5 py-4">
+                        @php
+                            $totalMinutes = 0;
+                            foreach($report->tasks as $task) {
+                                $ts = strtolower($task->time_spend);
+                                if (preg_match('/(\d+)\s*h/', $ts, $m)) $totalMinutes += $m[1] * 60;
+                                if (preg_match('/(\d+)\s*m/', $ts, $m)) $totalMinutes += $m[1];
+                                if (preg_match('/(\d+):(\d+)/', $ts, $m)) $totalMinutes += $m[1] * 60 + $m[2];
+                            }
+                            $h = floor($totalMinutes / 60);
+                            $m = $totalMinutes % 60;
+                            $timeStr = ($h > 0 ? $h.'h ' : '') . ($m > 0 ? $m.'m' : '');
+                            if (!$timeStr) $timeStr = '—';
+                        @endphp
+                        <div class="flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">{{ $timeStr }}</span>
+                        </div>
                     </td>
 
                     <td class="px-5 py-4 max-w-[220px]">
@@ -402,10 +472,29 @@
                     </div>
                 </div>`;
 
+            const totalMinutes = (d.tasks || []).reduce((acc, t) => {
+                const ts = String(t.time_spend || '').toLowerCase();
+                let m = 0;
+                let match;
+                if (match = ts.match(/(\d+)\s*h/)) m += parseInt(match[1]) * 60;
+                if (match = ts.match(/(\d+)\s*m/)) m += parseInt(match[1]);
+                if (match = ts.match(/(\d+):(\d+)/)) m += parseInt(match[1]) * 60 + parseInt(match[2]);
+                return acc + m;
+            }, 0);
+            const th = Math.floor(totalMinutes / 60);
+            const tm = totalMinutes % 60;
+            const totalStr = (th > 0 ? th + 'h ' : '') + (tm > 0 ? tm + 'm' : '') || '—';
+
             const tasksHtml = d.tasks && d.tasks.length > 0
-                ? `<div class="flex items-center justify-between mb-3">
-                       <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tasks (${d.tasks.length})</p>
-                       <span class="text-xs text-gray-400">${d.tasks.filter(t=>t.status==='completed').length} completed</span>
+                ? `<div class="flex items-center justify-between mb-3 bg-indigo-50 rounded-lg px-3 py-2 border border-indigo-100">
+                       <div>
+                           <p class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Tasks (${d.tasks.length})</p>
+                           <p class="text-[10px] text-indigo-500 font-medium">${d.tasks.filter(t=>t.status==='completed').length} completed</p>
+                       </div>
+                       <div class="text-right">
+                           <p class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Total Time</p>
+                           <p class="text-sm font-bold text-indigo-800">${totalStr}</p>
+                       </div>
                    </div>
                    <div class="space-y-2.5">
                    ${d.tasks.map((t, i) => `
@@ -444,33 +533,62 @@
 
     // ── Filters ────────────────────────────────────────────
     function applyFilters() {
-        const search  = document.getElementById('search-input').value.toLowerCase().trim();
-        const date    = document.getElementById('date-filter').value;
+        const staffId = document.getElementById('staff-filter')?.value;
+        const start   = document.getElementById('start-date').value;
+        const end     = document.getElementById('end-date').value;
         const rows    = document.querySelectorAll('.report-row');
         let visible   = 0;
 
         rows.forEach(row => {
-            const nm = !search || row.dataset.name.includes(search);
-            const dm = !date   || row.dataset.date === date;
-            if (nm && dm) { row.style.display = ''; visible++; }
-            else          { row.style.display = 'none'; }
+            const sidMatch = !staffId || row.dataset.staffId === staffId;
+            const rDate    = row.dataset.date;
+            
+            let dateMatch = true;
+            if (start && rDate < start) dateMatch = false;
+            if (end && rDate > end) dateMatch = false;
+
+            if (sidMatch && dateMatch) { 
+                row.style.display = ''; 
+                visible++; 
+            } else { 
+                row.style.display = 'none'; 
+            }
         });
 
         const noRes = document.getElementById('no-results');
         const cnt   = document.getElementById('visible-count');
-        noRes.classList.toggle('hidden', visible > 0);
+        if (noRes) noRes.classList.toggle('hidden', visible > 0);
         if (cnt) cnt.textContent = visible;
+        
         const rc = document.getElementById('result-count');
         if (rc) rc.textContent = visible + ' report' + (visible !== 1 ? 's' : '');
     }
 
-    function clearFilters() {
-        document.getElementById('search-input').value = '';
-        document.getElementById('date-filter').value  = '';
+    function setQuickRange(type) {
+        const now = new Date();
+        let start, end;
+        
+        if (type === 'week') {
+            const day = now.getDay(); // 0 (Sun) to 6 (Sat)
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+            start = new Date(now.setDate(diff));
+            end = new Date(now.setDate(diff + 6));
+        } else if (type === 'month') {
+            start = new Date(now.getFullYear(), now.getMonth(), 1);
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        }
+
+        document.getElementById('start-date').value = start.toISOString().split('T')[0];
+        document.getElementById('end-date').value = end.toISOString().split('T')[0];
         applyFilters();
     }
 
-    document.getElementById('search-input').addEventListener('input', applyFilters);
-    document.getElementById('date-filter').addEventListener('change', applyFilters);
+    function clearFilters() {
+        const sf = document.getElementById('staff-filter');
+        if (sf) sf.value = '';
+        document.getElementById('start-date').value  = '';
+        document.getElementById('end-date').value  = '';
+        applyFilters();
+    }
 </script>
 @endpush

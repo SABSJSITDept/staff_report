@@ -93,6 +93,7 @@ Route::middleware(['auth', 'role:IT DEPARTMENT'])->prefix('stock-management')->n
 // Daily Report (All authenticated users)
 Route::middleware('auth')->prefix('daily-report')->name('daily-report.')->group(function () {
     Route::get('/',          [DailyReportController::class, 'index'])->name('index');
+    Route::get('/export',    [DailyReportController::class, 'export'])->name('export');
     Route::get('/create',   [DailyReportController::class, 'create'])->name('create');
     Route::post('/',        [DailyReportController::class, 'store'])->name('store');
     Route::get('/{dailyReport}',        [DailyReportController::class, 'show'])->name('show');
