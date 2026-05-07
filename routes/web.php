@@ -29,6 +29,7 @@ Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')
 // Staff routes
 Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->group(function () {
     Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/guide', [StaffDashboardController::class, 'guide'])->name('guide');
     Route::post('/profile-update-request', [\App\Http\Controllers\ProfileUpdateRequestController::class, 'store'])->name('profile.update.request');
 });
 

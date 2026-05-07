@@ -71,4 +71,9 @@ class StaffDashboardController extends Controller
             'yearsOfService'
         ));
     }
+
+    public function guide()
+    {
+        return view('Staff.guide');
+    }
 }
