@@ -248,6 +248,14 @@
                 </td>
                 <td class="px-5 py-4 text-center">
                     <div class="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition">
+                        <a href="/staff/create?office_id=${office.id}&role=manager"
+                            class="inline-flex items-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-700
+                                   text-xs font-medium px-3 py-1.5 rounded-lg transition" title="Add Manager for this office">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                            + Mgr
+                        </a>
                         <a href="/office/create?id=${office.id}"
                             class="inline-flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700
                                    text-xs font-medium px-3 py-1.5 rounded-lg transition">

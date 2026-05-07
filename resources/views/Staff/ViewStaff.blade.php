@@ -83,45 +83,90 @@
 </nav>
 
 {{-- Page Header --}}
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
+<div class="card-premium !p-0 overflow-hidden mb-8">
+    <div class="gradient-bg px-8 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-center gap-5">
+            <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-inner border border-white/10">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Staff Management</h1>
+                <p class="text-indigo-100/80 text-xs mt-1 uppercase tracking-widest font-semibold">Directory & Permissions</p>
+            </div>
         </div>
-        <div>
-            <h1 class="text-xl font-bold text-gray-800">Staff Management</h1>
-            <p class="text-gray-400 text-xs mt-0.5">Manage all staff members</p>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('staff.create') }}" class="btn-primary !bg-white !text-indigo-600 hover:!bg-indigo-50 shadow-xl border-none px-6 py-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Register Personnel
+            </a>
         </div>
     </div>
-    <a href="{{ route('staff.create') }}"
-        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
-               px-5 py-2.5 rounded-xl transition shadow-sm shadow-indigo-200 self-start sm:self-auto">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        Add New Staff
-    </a>
 </div>
 
-{{-- Stats Cards --}}
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Total Staff</p>
-        <p class="text-2xl font-bold text-gray-800" id="stat-total">—</p>
+{{-- Stats Grid --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    {{-- Total Staff --}}
+    <div class="card-premium">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Personnel</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-0.5" id="stat-total">—</h3>
+            </div>
+        </div>
     </div>
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Active</p>
-        <p class="text-2xl font-bold text-green-600" id="stat-active">—</p>
+
+    {{-- Active Staff --}}
+    <div class="card-premium">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Members</p>
+                <h3 class="text-2xl font-bold text-emerald-600 mt-0.5" id="stat-active">—</h3>
+            </div>
+        </div>
     </div>
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Inactive</p>
-        <p class="text-2xl font-bold text-red-400" id="stat-inactive">—</p>
+
+    {{-- Inactive Staff --}}
+    <div class="card-premium">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inactive/Left</p>
+                <h3 class="text-2xl font-bold text-rose-600 mt-0.5" id="stat-inactive">—</h3>
+            </div>
+        </div>
     </div>
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Last Updated</p>
-        <p class="text-sm font-semibold text-indigo-600 pt-1" id="stat-date">—</p>
+
+    {{-- Last Updated --}}
+    <div class="card-premium">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sync Status</p>
+                <h3 class="text-sm font-bold text-amber-600 mt-1" id="stat-date">Active Now</h3>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -197,6 +242,7 @@
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Office</th>
+                    <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">DOJ</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Actions</th>
@@ -357,6 +403,13 @@
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs">${s.designation}</td>
                 <td class="px-4 py-3 text-gray-500 text-xs">${s.office_name ?? '—'}</td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-tight
+                        ${s.role === 'admin' ? 'bg-purple-100 text-purple-700' : 
+                          (s.role === 'manager' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600')}">
+                        ${s.role ?? 'staff'}
+                    </span>
+                </td>
                 <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(s.doj)}</td>
                 <td class="px-4 py-3">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold

@@ -14,7 +14,7 @@ class StaffController extends Controller
 {
     public function index(): JsonResponse
     {
-        $staff = StaffModel::with(['department', 'office'])->latest()->get()->map(function ($s) {
+        $staff = StaffModel::with(['department', 'office', 'user'])->latest()->get()->map(function ($s) {
             return [
                 'id'          => $s->id,
                 'name'        => $s->name,
@@ -31,6 +31,7 @@ class StaffController extends Controller
                 'office_name' => $s->office?->name,
                 'photo'       => $s->photo ? asset('storage/' . $s->photo) : null,
                 'status'      => $s->status,
+                'role'        => $s->user?->role ?? 'staff',
                 'left_date'   => $s->left_date,
                 'created_at'  => $s->created_at,
                 'updated_at'  => $s->updated_at,
@@ -55,6 +56,7 @@ class StaffController extends Controller
             'office_id'   => ['required', 'exists:office_details,id'],
             'photo'       => ['nullable', 'image', 'max:2048'],
             'status'      => ['required', 'in:Active,Inactive'],
+            'role'        => ['required', 'in:staff,manager,admin'],
         ]);
 
         $validated['name']        = strtoupper($validated['name']);
@@ -72,7 +74,7 @@ class StaffController extends Controller
                 'name'     => $validated['name'],
                 'email'    => $validated['email'],
                 'password' => Hash::make($validated['mobile']),
-                'role'     => 'staff',
+                'role'     => $request->input('role', 'staff'),
             ]);
             $validated['user_id'] = $user->id;
         }
@@ -89,7 +91,7 @@ class StaffController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $s = StaffModel::with(['department', 'office'])->findOrFail($id);
+        $s = StaffModel::with(['department', 'office', 'user'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -109,6 +111,7 @@ class StaffController extends Controller
                 'office_name' => $s->office?->name,
                 'photo'       => $s->photo ? asset('storage/' . $s->photo) : null,
                 'status'      => $s->status,
+                'role'        => $s->user?->role ?? 'staff',
                 'left_date'   => $s->left_date,
             ],
         ]);
@@ -147,6 +150,7 @@ class StaffController extends Controller
             'office_id'   => ['required', 'exists:office_details,id'],
             'photo'       => ['nullable', 'image', 'max:2048'],
             'status'      => ['required', 'in:Active,Inactive'],
+            'role'        => ['required', 'in:staff,manager,admin'],
         ]);
 
         $validated['name']        = strtoupper($validated['name']);
@@ -170,6 +174,7 @@ class StaffController extends Controller
                     'name'     => $validated['name'],
                     'email'    => $validated['email'],
                     'password' => Hash::make($validated['mobile']),
+                    'role'     => $request->input('role', 'staff'),
                 ]);
             } else {
                 // Create new user if not linked yet
@@ -177,7 +182,7 @@ class StaffController extends Controller
                     'name'     => $validated['name'],
                     'email'    => $validated['email'],
                     'password' => Hash::make($validated['mobile']),
-                    'role'     => 'staff',
+                    'role'     => $request->input('role', 'staff'),
                 ]);
                 $validated['user_id'] = $user->id;
             }

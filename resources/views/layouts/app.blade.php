@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Staff Daily Report')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <nav class="bg-indigo-700 text-white shadow">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex items-center justify-between h-16">
+<body class="bg-slate-50 min-h-screen text-slate-800">
+    <nav class="glass-nav text-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-20">
                 <!-- Left side: Brand/Logo -->
                 <div class="flex-shrink-0 flex items-center">
                     <a href="{{ Auth::user()->role === 'admin' ? route('admin.dashboard') : (Auth::user()->role === 'manager' ? route('manager.dashboard') : route('staff.dashboard')) }}"
@@ -68,7 +71,7 @@
                     @endif
 
                     {{-- Staff Management Dropdown --}}
-                    @if(Auth::user()->role === 'admin')
+                    @if(in_array(Auth::user()->role, ['admin', 'manager']))
                     <div class="relative" id="staff-menu-wrapper">
                         <button onclick="toggleStaffMenu()"
                             class="flex items-center gap-1 text-sm font-medium hover:text-indigo-200 transition focus:outline-none">
@@ -249,6 +252,8 @@
                     <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider px-3 py-2">Management</div>
                     <a href="{{ route('office.view') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">Office Management</a>
                     <a href="{{ route('department.view') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">Department Management</a>
+                @endif
+                @if(in_array(Auth::user()->role, ['admin', 'manager']))
                     <a href="{{ route('staff.view') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">Staff Management</a>
                 @endif
 

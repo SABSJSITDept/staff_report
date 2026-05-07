@@ -37,194 +37,174 @@
     </div>
 </div>
 
-{{-- ===================== PAGE HEADER ===================== --}}
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <div>
-        <div class="flex items-center gap-2 text-xs text-gray-400 mb-1">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+{{-- Page Header --}}
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+    <div class="flex items-center gap-5">
+        <div class="w-16 h-16 rounded-[2rem] gradient-bg flex items-center justify-center shadow-2xl shadow-indigo-200">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <span>Dashboard</span>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
-            <span class="text-gray-600 font-medium">Daily Reports</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Daily Reports</h1>
-        <p class="text-gray-500 text-sm mt-0.5">
-            @if(Auth::user()->role === 'staff')
-                Your submitted reports — {{ now()->format('F Y') }}
-            @else
-                Daily activity reports of all staff
-            @endif
-        </p>
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Work Progress Tracker</h1>
+            <p class="text-slate-400 text-sm mt-1">Real-time overview of organization-wide daily activities</p>
+        </div>
     </div>
-    <a href="{{ route('daily-report.create') }}"
-       class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-indigo-200 whitespace-nowrap self-start sm:self-auto">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        New Report
-    </a>
+    
+    <div class="flex items-center gap-3">
+        <a href="{{ route('daily-report.create') }}" class="btn-primary">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            Submit New Report
+        </a>
+    </div>
 </div>
 
-{{-- ===================== STATS CARDS ===================== --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    @php
-        $totalReports    = $reports->count();
-        $todayReports    = $reports->where('report_date', now()->toDateString())->count();
-        $totalTasks      = $reports->sum(fn($r) => $r->tasks->count());
-        $completedTasks  = $reports->sum(fn($r) => $r->tasks->where('status','completed')->count());
-        $completionRate  = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
-    @endphp
-
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+{{-- Stats Cards --}}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="card-premium flex items-center gap-5">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
         </div>
         <div>
-            <p class="text-2xl font-bold text-gray-900">{{ $totalReports }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">Total Reports</p>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Logs</p>
+            <p class="text-3xl font-bold text-slate-900 mt-1">{{ $totalReports }}</p>
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center flex-shrink-0">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+    <div class="card-premium flex items-center gap-5">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
         </div>
         <div>
-            <p class="text-2xl font-bold text-gray-900">{{ $todayReports }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">Today's Submissions</p>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Today</p>
+            <p class="text-3xl font-bold text-slate-900 mt-1">{{ $todayReports }}</p>
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center flex-shrink-0">
-            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+    <div class="card-premium flex items-center gap-5">
+        <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-6 9l2 2 4-4"/>
             </svg>
         </div>
         <div>
-            <p class="text-2xl font-bold text-gray-900">{{ $totalTasks }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">Total Tasks</p>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tasks</p>
+            <p class="text-3xl font-bold text-slate-900 mt-1">{{ $totalTasks }}</p>
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+    <div class="card-premium flex items-center gap-5">
+        <div class="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-7 h-7 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
         <div>
-            <p class="text-2xl font-bold text-gray-900">{{ $completionRate }}%</p>
-            <p class="text-xs text-gray-500 mt-0.5">Completion Rate</p>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Rate</p>
+            <p class="text-3xl font-bold text-slate-900 mt-1">{{ $completionRate }}%</p>
         </div>
     </div>
 </div>
 
-{{-- ===================== FILTER & EXPORT BAR ===================== --}}
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
-    <form action="{{ route('daily-report.export') }}" method="GET" id="export-form" class="flex flex-wrap items-end gap-4">
+{{-- Filters Bar --}}
+<div class="card-premium mb-8 overflow-visible">
+    <form action="{{ route('daily-report.export') }}" method="GET" id="export-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         @if(Auth::user()->role !== 'staff')
-        <div class="flex-1 min-w-[200px]">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Staff Member</label>
+        <div class="space-y-2">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Staff Member</label>
             <div class="relative">
-                <select name="staff_id" id="staff-filter" onchange="applyFilters()"
-                        class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none transition appearance-none">
-                    <option value="">All Staff</option>
+                <select name="staff_id" id="staff-filter" onchange="applyFilters()" class="form-input-modern appearance-none pr-10">
+                    <option value="">All Personnel</option>
                     @foreach($allStaff as $s)
-                        <option value="{{ $s->id }}" data-name="{{ strtolower($s->name) }}">{{ $s->name }} ({{ $s->role }})</option>
+                        <option value="{{ $s->id }}" data-name="{{ strtolower($s->name) }}">{{ $s->name }}</option>
                     @endforeach
                 </select>
-                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                     </svg>
                 </div>
             </div>
         </div>
         @endif
 
-        <div class="flex-1 min-w-[150px]">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Start Date</label>
-            <input type="date" name="start_date" id="start-date" onchange="applyFilters()"
-                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none transition" />
+        <div class="space-y-2">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
+            <input type="date" name="start_date" id="start-date" onchange="applyFilters()" class="form-input-modern">
         </div>
 
-        <div class="flex-1 min-w-[150px]">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">End Date</label>
-            <input type="date" name="end_date" id="end-date" onchange="applyFilters()"
-                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none transition" />
+        <div class="space-y-2">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">End Date</label>
+            <input type="date" name="end_date" id="end-date" onchange="applyFilters()" class="form-input-modern">
         </div>
 
-        <div class="flex items-center gap-2">
-            <button type="button" onclick="setQuickRange('week')"
-                    class="h-[42px] px-4 flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition">
-                Weekly
-            </button>
-            <button type="button" onclick="setQuickRange('month')"
-                    class="h-[42px] px-4 flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition">
-                Monthly
-            </button>
-            
-            <button type="button" onclick="clearFilters()"
-                    class="h-[42px] px-4 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 border border-gray-100 rounded-xl transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-                Reset
-            </button>
+        <div class="lg:col-span-2 flex items-end gap-3">
+            <div class="flex-1 flex gap-2">
+                <button type="button" onclick="setQuickRange('week')" class="flex-1 px-4 py-3.5 rounded-2xl bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition">Week</button>
+                <button type="button" onclick="setQuickRange('month')" class="flex-1 px-4 py-3.5 rounded-2xl bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition">Month</button>
+            </div>
             
             <div class="relative group">
-                <button type="button" class="h-[42px] px-5 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <button type="button" class="btn-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    Export Report
+                    Export
                 </button>
-                <div class="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block z-50 animate-in fade-in slide-in-from-bottom-2">
-                    <button type="submit" name="type" value="excel" class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition">
-                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        Download Excel
+                <div class="absolute right-0 bottom-full mb-3 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden hidden group-hover:block z-50 animate-in fade-in slide-in-from-bottom-2">
+                    <button type="submit" name="type" value="excel" class="w-full px-5 py-4 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition">
+                        <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        Excel Sheet
                     </button>
-                    <button type="submit" name="type" value="pdf" class="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-3 transition">
-                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                        </svg>
-                        Download PDF
+                    <button type="submit" name="type" value="pdf" class="w-full px-5 py-4 text-left text-sm text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-3 transition border-t border-slate-50">
+                        <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        PDF Document
                     </button>
                 </div>
             </div>
+
+            <button type="button" onclick="clearFilters()" class="btn-secondary px-5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357-2H15"/>
+                </svg>
+            </button>
         </div>
     </form>
 </div>
 
-{{-- ===================== TABLE ===================== --}}
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+{{-- Table Section --}}
+<div class="card-premium !p-0 overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full" id="reports-table">
+        <table class="min-w-full text-sm text-left" id="reports-table">
             <thead>
-                <tr class="bg-gray-50 border-b border-gray-100">
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
+                <tr class="bg-slate-50 border-b border-slate-100">
+                    <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest w-12">#</th>
                     @if(Auth::user()->role !== 'staff')
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Staff</th>
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                        <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Personnel</th>
+                        <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">User Role</th>
                     @endif
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tasks</th>
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Time</th>
-                    <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Pending Work</th>
-                    <th class="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pr-6">Actions</th>
+                    <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Report Date</th>
+                    <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Tasks Summary</th>
+                    <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Hours Logged</th>
+                    <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pending Work</th>
+                    <th class="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50" id="reports-tbody">
+            <tbody id="reports-tbody" class="divide-y divide-slate-100">
                 @forelse($reports as $report)
                 @php
                     $taskCount  = $report->tasks->count();
@@ -243,65 +223,50 @@
                     </td>
 
                     @if(Auth::user()->role !== 'staff')
-                    <td class="px-5 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-2xl gradient-bg flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-100 flex-shrink-0">
                                 {{ strtoupper(substr($report->staff->name ?? 'U', 0, 1)) }}
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-gray-800 leading-tight">{{ $report->staff->name ?? '—' }}</p>
-                                <p class="text-xs text-gray-400 mt-0.5">{{ $report->staff->email ?? '' }}</p>
+                                <p class="text-sm font-bold text-slate-800 leading-tight">{{ $report->staff->name ?? '—' }}</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5 tracking-wide">{{ $report->staff->designation ?? '' }}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="px-5 py-4">
+                    <td class="px-6 py-4">
                         @php $role = $report->staff->role ?? 'staff'; @endphp
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold capitalize
-                            {{ $role === 'admin' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
-                               ($role === 'manager' ? 'bg-green-50 text-green-700 border border-green-100' :
-                                'bg-amber-50 text-amber-700 border border-amber-100') }}">
-                            <span class="w-1.5 h-1.5 rounded-full
-                                {{ $role === 'admin' ? 'bg-indigo-500' :
-                                   ($role === 'manager' ? 'bg-green-500' : 'bg-amber-500') }}"></span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
+                            {{ $role === 'admin' ? 'bg-purple-50 text-purple-600' :
+                               ($role === 'manager' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600') }}">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $role === 'admin' ? 'bg-purple-500' : ($role === 'manager' ? 'bg-indigo-500' : 'bg-slate-400') }}"></span>
                             {{ $role }}
                         </span>
                     </td>
                     @endif
 
-                    <td class="px-5 py-4">
-                        <div>
-                            <p class="text-sm font-semibold text-gray-800">{{ $report->report_date->format('d M Y') }}</p>
-                            <p class="text-xs text-gray-400 mt-0.5">{{ $report->report_date->format('l') }}</p>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-1.5 text-slate-700 font-medium">
+                            <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            {{ $report->report_date->format('d M, Y') }}
                         </div>
-                        @if($report->report_date->isToday())
-                            <span class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                <span class="w-1 h-1 rounded-full bg-green-500 animate-pulse"></span>
-                                Today
-                            </span>
-                        @endif
                     </td>
 
-                    <td class="px-5 py-4">
-                        @if($taskCount > 0)
-                        <div class="flex flex-col gap-1.5">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-semibold text-gray-700">{{ $doneCount }}/{{ $taskCount }}</span>
-                                <span class="text-xs text-gray-400">done</span>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-2 min-w-[120px]">
+                            <div class="flex items-center justify-between text-[11px] font-bold">
+                                <span class="text-slate-400 uppercase tracking-widest">{{ $doneCount }}/{{ $taskCount }} Tasks</span>
+                                <span class="{{ $pct === 100 ? 'text-emerald-500' : 'text-indigo-500' }}">{{ $pct }}%</span>
                             </div>
-                            <div class="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full transition-all
-                                    {{ $pct === 100 ? 'bg-green-500' : ($pct >= 50 ? 'bg-blue-500' : 'bg-amber-400') }}"
-                                    style="width: {{ $pct }}%"></div>
+                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full {{ $pct === 100 ? 'bg-emerald-500' : 'bg-indigo-500' }} rounded-full transition-all duration-500" style="width: {{ $pct }}%"></div>
                             </div>
                         </div>
-                        @else
-                            <span class="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
-                                No tasks
-                            </span>
-                        @endif
                     </td>
 
-                    <td class="px-5 py-4">
+                    <td class="px-6 py-4">
                         @php
                             $totalMinutes = 0;
                             foreach($report->tasks as $task) {
@@ -313,13 +278,12 @@
                             $h = floor($totalMinutes / 60);
                             $m = $totalMinutes % 60;
                             $timeStr = ($h > 0 ? $h.'h ' : '') . ($m > 0 ? $m.'m' : '');
-                            if (!$timeStr) $timeStr = '—';
                         @endphp
-                        <div class="flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-50 text-slate-700 font-bold text-xs">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span class="text-sm font-medium text-gray-700">{{ $timeStr }}</span>
+                            {{ $timeStr ?: '—' }}
                         </div>
                     </td>
 

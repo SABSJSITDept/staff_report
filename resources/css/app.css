@@ -1,21 +1,60 @@
 @import 'tailwindcss';
 
-@layer components {
-    .form-input, .form-select, .form-textarea {
-        @apply block w-full px-4 py-2.5 text-gray-900 border border-gray-300 rounded-xl shadow-sm transition-all duration-200;
-        @apply focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:outline-none;
-        @apply placeholder:text-gray-400 text-sm;
+@layer base {
+    :root {
+        --primary: 79, 70, 229; /* Indigo 600 */
+        --secondary: 124, 58, 237; /* Violet 600 */
+        --accent: 236, 72, 153; /* Pink 500 */
     }
 
-    .form-label {
-        @apply block text-sm font-semibold text-gray-700 mb-2 ml-1;
-    }
-
-    .form-group {
-        @apply mb-6;
+    body {
+        @apply bg-[#f8fafc] text-slate-800 antialiased selection:bg-indigo-100 selection:text-indigo-900;
+        font-family: 'Outfit', sans-serif;
     }
 }
 
-body {
-    @apply font-sans;
+@layer components {
+    .glass-nav {
+        @apply bg-indigo-700/90 backdrop-blur-md border-b border-white/10 sticky top-0 z-50;
+    }
+
+    .card-premium {
+        @apply bg-white border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)];
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-slate-700 border border-slate-200 font-semibold rounded-2xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200;
+    }
+
+    .form-input-modern {
+        @apply w-full px-5 py-3.5 bg-slate-50 border-0 rounded-2xl text-slate-800 placeholder:text-slate-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all duration-200;
+    }
+
+    .badge-modern {
+        @apply px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-slate-200 rounded-full hover:bg-slate-300 transition;
+    }
+}
+
+.gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600;
+}
+
+.gradient-bg {
+    @apply bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800;
 }
