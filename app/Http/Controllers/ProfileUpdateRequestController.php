@@ -58,13 +58,22 @@ class ProfileUpdateRequestController extends Controller
             'mobile' => 'nullable|digits:10',
             'email' => 'nullable|email|max:255',
             'doj' => 'nullable|date',
-            'designation' => 'nullable|string|max:255',
-            'dept_id' => 'nullable|exists:departments,id',
-            'office_id' => 'nullable|exists:offices,id',
             'address' => 'nullable|string',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $data = array_filter($request->only('name', 'f_name', 'dob', 'mobile', 'email', 'doj', 'designation', 'dept_id', 'office_id', 'address'));
+        $data = array_filter($request->only('name', 'f_name', 'dob', 'mobile', 'email', 'doj', 'address'));
+
+        if ($request->hasFile('photo')) {
+            $image = $request->file('photo');
+            $name = time().'_'.$user->id.'.'.$image->getClientOriginalExtension();
+            $destinationPath = public_path('/profile_photos/requests');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0777, true);
+            }
+            $image->move($destinationPath, $name);
+            $data['photo'] = 'profile_photos/requests/'.$name;
+        }
 
         if (empty($data)) {
             return response()->json(['success' => false, 'message' => 'No data provided to update'], 400);
@@ -110,13 +119,22 @@ class ProfileUpdateRequestController extends Controller
             if (isset($data['f_name'])) $staffUpdate['f_name'] = strtoupper($data['f_name']);
             if (isset($data['dob'])) $staffUpdate['dob'] = $data['dob'];
             if (isset($data['doj'])) $staffUpdate['doj'] = $data['doj'];
-            if (isset($data['designation'])) $staffUpdate['designation'] = strtoupper($data['designation']);
-            if (isset($data['dept_id'])) $staffUpdate['dept_id'] = $data['dept_id'];
-            if (isset($data['office_id'])) $staffUpdate['office_id'] = $data['office_id'];
             if (isset($data['email'])) $staffUpdate['email'] = $data['email'];
             if (isset($data['mobile'])) $staffUpdate['mobile'] = $data['mobile'];
             if (isset($data['address'])) $staffUpdate['address'] = strtoupper($data['address']);
             
+            if (isset($data['photo'])) {
+                // Move from requests to final destination if needed, or just update
+                $oldPath = public_path($data['photo']);
+                $newName = basename($data['photo']);
+                $newPath = public_path('profile_photos/'.$newName);
+                
+                if (file_exists($oldPath)) {
+                    rename($oldPath, $newPath);
+                    $staffUpdate['photo'] = 'profile_photos/'.$newName;
+                }
+            }
+
             if (!empty($staffUpdate)) {
                 $staff->update($staffUpdate);
             }

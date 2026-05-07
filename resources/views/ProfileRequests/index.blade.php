@@ -40,16 +40,17 @@
                         @foreach($req->requested_data as $key => $value)
                             @php
                                 $displayKey = ucfirst(str_replace('_', ' ', $key));
-                                $displayValue = $value;
-                                if ($key === 'dept_id' && $value) {
-                                    $displayKey = 'Department';
-                                    $displayValue = \App\Models\Office\DepartmentModel::find($value)?->name ?? $value;
-                                } elseif ($key === 'office_id' && $value) {
-                                    $displayKey = 'Office';
-                                    $displayValue = \App\Models\Office\OfficeModel::find($value)?->name ?? $value;
-                                }
                             @endphp
-                            <li><strong>{{ $displayKey }}:</strong> {{ $displayValue }}</li>
+                            <li>
+                                <strong>{{ $displayKey }}:</strong> 
+                                @if($key === 'photo')
+                                    <div class="mt-1">
+                                        <img src="{{ asset($value) }}" class="w-16 h-16 rounded-md object-cover border shadow-sm" alt="Requested Photo">
+                                    </div>
+                                @else
+                                    {{ $value }}
+                                @endif
+                            </li>
                         @endforeach
                     </ul>
                 </td>

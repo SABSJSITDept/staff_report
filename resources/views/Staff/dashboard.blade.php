@@ -309,7 +309,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
-        <form id="profile-update-form" class="space-y-4">
+        <form id="profile-update-form" class="space-y-4" enctype="multipart/form-data">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -337,26 +337,8 @@
                     <input type="date" name="doj" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border" value="{{ $staffDetail->doj ?? '' }}">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Designation</label>
-                    <input type="text" name="designation" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border" value="{{ $staffDetail->designation ?? '' }}">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Department</label>
-                    <select name="dept_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border">
-                        <option value="">Select Department</option>
-                        @foreach(\App\Models\Office\DepartmentModel::all() as $dept)
-                            <option value="{{ $dept->id }}" {{ ($staffDetail->dept_id ?? '') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Office</label>
-                    <select name="office_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border">
-                        <option value="">Select Office</option>
-                        @foreach(\App\Models\Office\OfficeModel::all() as $office)
-                            <option value="{{ $office->id }}" {{ ($staffDetail->office_id ?? '') == $office->id ? 'selected' : '' }}>{{ $office->name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700">Upload Photo</label>
+                    <input type="file" name="photo" accept="image/*" class="mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border rounded-md p-1">
                 </div>
                 <div class="col-span-1 md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">Address</label>
