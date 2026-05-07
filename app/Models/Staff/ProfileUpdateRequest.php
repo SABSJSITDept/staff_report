@@ -31,3 +31,4 @@ class ProfileUpdateRequest extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'reviewed_by');
     }
+}
