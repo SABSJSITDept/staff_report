@@ -14,8 +14,9 @@
         <h3 class="text-lg font-bold text-gray-800 mb-2">Login Kaise Karein?</h3>
         <ul class="text-sm text-gray-600 space-y-2 list-disc list-inside">
             <li>Apne browser mein portal open karein.</li>
-            <li>Apna <strong>Email</strong> ya <strong>Mobile</strong> enter karein.</li>
-            <li>Password dalein aur <strong>Login</strong> button par click karein.</li>
+            <li>Apna <strong>Registered Email ID</strong> enter karein.</li>
+            <li>Password mein apna <strong>Registered Mobile Number</strong> dalein.</li>
+            <li><strong>Login</strong> button par click karein.</li>
         </ul>
     </div>
 
