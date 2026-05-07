@@ -32,6 +32,40 @@
 </div>
 
 {{-- Today's Status Banner --}}
+@if($isBirthday || $isAnniversary)
+<div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    @if($isBirthday)
+    <div class="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-5 text-white shadow-lg shadow-rose-200 relative overflow-hidden">
+        <div class="relative z-10 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-2xl">🎂</div>
+            <div>
+                <h3 class="font-bold text-lg">Happy Birthday!</h3>
+                <p class="text-rose-100 text-sm">Wishing you a fantastic day filled with joy!</p>
+            </div>
+        </div>
+        <div class="absolute -right-4 -bottom-4 opacity-20 transform rotate-12">
+            <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M19 15v2h2v2h-2v2h-2v-2h-2v-2h2v-2h2zM7 9a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zm10-2a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zM7 17a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zm10-2a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8z"/></svg>
+        </div>
+    </div>
+    @endif
+
+    @if($isAnniversary)
+    <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-5 text-white shadow-lg shadow-orange-200 relative overflow-hidden">
+        <div class="relative z-10 flex items-center gap-4">
+            <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-2xl">🎊</div>
+            <div>
+                <h3 class="font-bold text-lg">Work Anniversary!</h3>
+                <p class="text-orange-100 text-sm">Congratulations on completing {{ $yearsOfService }} year(s) with us!</p>
+            </div>
+        </div>
+        <div class="absolute -right-4 -bottom-4 opacity-20 transform rotate-12">
+            <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 11v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+        </div>
+    </div>
+    @endif
+</div>
+@endif
+
 @if($todayReport)
 <div class="mb-6 bg-green-50 border border-green-200 rounded-xl px-5 py-3.5 flex items-center gap-3">
     <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -300,6 +334,93 @@
 
 </div>
 
+{{-- Recent Profile Requests Section --}}
+<div class="mt-8">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Your Profile Update Requests</h3>
+        <p class="text-xs text-gray-500">Status of your recent requests</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        @if($profileRequests->count() > 0)
+        <table class="min-w-full text-sm text-left">
+            <thead class="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold tracking-wider">
+                <tr>
+                    <th class="px-6 py-4">Requested On</th>
+                    <th class="px-6 py-4">Updates</th>
+                    <th class="px-6 py-4 text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($profileRequests as $preq)
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 text-gray-500">{{ $preq->created_at->format('d M Y') }}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-1">
+                            @foreach($preq->requested_data as $key => $val)
+                                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] border border-indigo-100">
+                                    {{ ucfirst(str_replace('_', ' ', $key)) }}
+                                </span>
+                            @endforeach
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        @if($preq->status === 'pending')
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[11px] font-bold">Pending</span>
+                        @elseif($preq->status === 'approved')
+                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[11px] font-bold">Approved</span>
+                        @else
+                            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[11px] font-bold">Rejected</span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @else
+        <div class="p-10 text-center flex flex-col items-center">
+            <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p class="text-gray-400 text-sm">No recent profile update requests.</p>
+        </div>
+        @endif
+    </div>
+</div>
+
+{{-- Recent Reports Section --}}
+<div class="mt-8 mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Recent Reports</h3>
+        <a href="{{ route('daily-report.index') }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">View All</a>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        @if($recentReports->count() > 0)
+        <table class="min-w-full text-sm text-left">
+            <thead class="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold tracking-wider">
+                <tr>
+                    <th class="px-6 py-4">Date</th>
+                    <th class="px-6 py-4">Tasks</th>
+                    <th class="px-6 py-4 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($recentReports as $rep)
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-medium text-gray-800">{{ \Carbon\Carbon::parse($rep->report_date)->format('d M Y') }}</td>
+                    <td class="px-6 py-4 text-gray-500">{{ $rep->tasks->count() }} tasks</td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{{ route('daily-report.edit', $rep->id) }}" class="text-indigo-600 hover:text-indigo-800 font-bold">Edit</a>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @else
+        <div class="p-10 text-center text-gray-400">No reports found.</div>
+        @endif
+    </div>
+</div>
+
 {{-- Update Profile Modal --}}
 <div id="update-profile-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
@@ -406,14 +527,19 @@
         .then(data => {
             alertBox.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-green-50', 'text-green-700');
             if (data.success) {
-                alertBox.classList.add('bg-green-50', 'text-green-700');
-                alertBox.innerText = data.message;
+                // Success Message UI
+                alertBox.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-200');
+                alertBox.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        <span>${data.message}</span>
+                    </div>
+                `;
                 setTimeout(() => {
-                    document.getElementById('update-profile-modal').classList.add('hidden');
-                    alertBox.classList.add('hidden');
+                    location.reload(); // Reload to show new status in table
                 }, 2000);
             } else {
-                alertBox.classList.add('bg-red-50', 'text-red-700');
+                alertBox.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
                 alertBox.innerText = data.message || 'Error submitting request.';
             }
         })

@@ -19,6 +19,11 @@ class StaffDashboardController extends Controller
             ->where('user_id', Auth::id())
             ->first();
 
+        if (!$staffDetail) {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Staff details not found.');
+        }
+
         $totalReports = DailyReport::where('staff_id', Auth::id())->count();
         $todayReport  = DailyReport::where('staff_id', Auth::id())
             ->whereDate('report_date', today())
@@ -29,6 +34,41 @@ class StaffDashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return view('Staff.dashboard', compact('staffDetail', 'totalReports', 'todayReport', 'recentReports'));
+        // Fetch Recent Profile Requests
+        $profileRequests = \App\Models\Staff\ProfileUpdateRequest::where('staff_id', $staffDetail->id)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        // Calculate Special Occasions
+        $isBirthday = false;
+        $isAnniversary = false;
+        $yearsOfService = 0;
+
+        if ($staffDetail->dob) {
+            $dob = \Carbon\Carbon::parse($staffDetail->dob);
+            if ($dob->isBirthday()) {
+                $isBirthday = true;
+            }
+        }
+
+        if ($staffDetail->doj) {
+            $doj = \Carbon\Carbon::parse($staffDetail->doj);
+            if ($doj->format('m-d') === now()->format('m-d')) {
+                $isAnniversary = true;
+                $yearsOfService = $doj->diffInYears(now());
+            }
+        }
+
+        return view('Staff.dashboard', compact(
+            'staffDetail', 
+            'totalReports', 
+            'todayReport', 
+            'recentReports', 
+            'profileRequests',
+            'isBirthday',
+            'isAnniversary',
+            'yearsOfService'
+        ));
     }
 }
