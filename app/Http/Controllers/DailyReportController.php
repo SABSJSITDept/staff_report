@@ -100,21 +100,30 @@ class DailyReportController extends Controller
 
     public function create()
     {
-        return view('DailyReport.DailyReportCreate');
+        // Fetch last report with incomplete tasks to carry forward
+        $lastReport = DailyReport::where('staff_id', Auth::id())
+            ->with(['tasks' => function($q) {
+                $q->where('status', '!=', 'completed');
+            }])
+            ->orderByDesc('report_date')
+            ->orderByDesc('id')
+            ->first();
+
+        return view('DailyReport.DailyReportCreate', compact('lastReport'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'report_date'  => 'required|date',
-            'pending_task' => 'nullable|string',
-            'planned_task' => 'nullable|string',
+            'report_date'  => 'required|date|before_or_equal:today',
+            'pending_task' => 'required|string',
+            'planned_task' => 'required|string',
             'comments'     => 'nullable|string',
             'tasks'                => 'nullable|array',
             'tasks.*.task_title'  => 'required_with:tasks.*|string|max:255',
-            'tasks.*.description' => 'nullable|string',
+            'tasks.*.description' => 'required_with:tasks.*|string',
             'tasks.*.status'      => 'required_with:tasks.*|in:completed,in_progress,pending,paused',
-            'tasks.*.time_spend'  => 'nullable|string|max:100',
+            'tasks.*.time_spend'  => 'required_with:tasks.*|string|max:100',
         ]);
 
         DB::beginTransaction();
@@ -157,6 +166,7 @@ class DailyReportController extends Controller
 
         return response()->json([
             'id'           => $dailyReport->id,
+            'can_edit'     => Auth::id() === $dailyReport->staff_id || Auth::user()->role === 'admin',
             'report_date'  => $dailyReport->report_date ? $dailyReport->report_date->format('d M Y') : '—',
             'pending_task' => $dailyReport->pending_task,
             'planned_task' => $dailyReport->planned_task,
@@ -190,15 +200,15 @@ class DailyReportController extends Controller
         }
 
         $request->validate([
-            'report_date'  => 'required|date',
-            'pending_task' => 'nullable|string',
-            'planned_task' => 'nullable|string',
+            'report_date'  => 'required|date|before_or_equal:today',
+            'pending_task' => 'required|string',
+            'planned_task' => 'required|string',
             'comments'     => 'nullable|string',
             'tasks'                => 'nullable|array',
             'tasks.*.task_title'  => 'required_with:tasks.*|string|max:255',
-            'tasks.*.description' => 'nullable|string',
+            'tasks.*.description' => 'required_with:tasks.*|string',
             'tasks.*.status'      => 'required_with:tasks.*|in:completed,in_progress,pending,paused',
-            'tasks.*.time_spend'  => 'nullable|string|max:100',
+            'tasks.*.time_spend'  => 'required_with:tasks.*|string|max:100',
         ]);
 
         DB::beginTransaction();
@@ -242,5 +252,40 @@ class DailyReportController extends Controller
         $dailyReport->tasks()->delete();
         $dailyReport->delete();
         return response()->json(['success' => true, 'message' => 'Report delete ho gayi!']);
+    }
+
+    public function getLastTasks(Request $request)
+    {
+        $date = $request->get('date');
+        $staffId = Auth::id();
+
+        // Get the latest report BEFORE the selected date
+        $query = DailyReport::where('staff_id', $staffId)
+            ->with(['tasks' => function($q) {
+                $q->where('status', '!=', 'completed');
+            }])
+            ->orderByDesc('report_date')
+            ->orderByDesc('id');
+
+        if ($date) {
+            $query->where('report_date', '<', $date);
+        }
+
+        $lastReport = $query->first();
+
+        if (!$lastReport) {
+            return response()->json(['success' => true, 'tasks' => [], 'pending_task' => '']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'pending_task' => $lastReport->planned_task,
+            'tasks' => $lastReport->tasks->map(fn($t) => [
+                'task_title' => $t->task_title,
+                'description' => $t->description,
+                'status' => $t->status,
+                'time_spend' => '' 
+            ])
+        ]);
     }
 }

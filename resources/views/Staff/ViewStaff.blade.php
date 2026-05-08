@@ -243,7 +243,7 @@
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Office</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">DOJ</th>
-                    <th class="sticky right-0 px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center bg-gray-50 z-30 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">Actions</th>
+                    <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Actions</th>
                 </tr>
             </thead>
             <tbody id="staff-table-body" class="divide-y divide-gray-50">
@@ -402,35 +402,7 @@
                 <td class="px-4 py-3 text-gray-500 text-xs">${s.designation}</td>
                 <td class="px-4 py-3 text-gray-500 text-xs">${s.office_name ?? '—'}</td>
                 <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(s.doj)}</td>
-                <td class="sticky right-0 px-4 py-3 text-center bg-white group-hover:bg-indigo-50 transition-colors z-10 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">
-                    <div class="flex items-center justify-center gap-1.5 opacity-70 group-hover:opacity-100 transition flex-wrap min-w-[180px]">
-                        <a href="/staff/create?id=${s.id}"
-                            class="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700
-                                   text-xs font-medium px-2.5 py-1.5 rounded-lg transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                            Edit
-                        </a>
-                        ${s.status === 'Active' ? `
-                        <button onclick="openLeftModal(${s.id}, '${s.name}')"
-                            class="inline-flex items-center gap-1 bg-orange-50 hover:bg-orange-100 text-orange-600
-                                   text-xs font-medium px-2.5 py-1.5 rounded-lg transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
-                            Left Date
-                        </button>` : ''}
-                        <button onclick="openDeleteModal(${s.id})"
-                            class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-500
-                                   text-xs font-medium px-2.5 py-1.5 rounded-lg transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                            Delete
-                        </button>
-                    </div>
-                </td>
+                <td class="px-4 py-3 text-center text-gray-300">—</td>
             </tr>
         `).join('');
     }

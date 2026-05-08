@@ -196,12 +196,12 @@
 
                 <!-- Right side: User Info & Logout (Desktop) -->
                 <div class="hidden md:flex items-center gap-4">
-                    <div class="relative group">
-                        <button class="flex items-center gap-1 text-sm font-medium focus:outline-none hover:text-indigo-200 transition">
+                    <div class="relative" id="profile-menu-wrapper">
+                        <button onclick="toggleProfileMenu()" onmouseenter="openProfileMenu()" class="flex items-center gap-1 text-sm font-medium focus:outline-none hover:text-indigo-200 transition">
                             <span class="whitespace-nowrap">{{ Auth::user()->name }}</span>
                             <span class="capitalize bg-indigo-500 px-2 py-0.5 rounded text-xs ml-1">{{ Auth::user()->role }}</span>
                         </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-1 hidden group-hover:block border border-gray-100 z-50">
+                        <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-1 hidden border border-gray-100 z-50">
                             <button onclick="document.getElementById('global-change-password-modal').classList.remove('hidden')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
                                 Change Password
                             </button>
@@ -338,6 +338,12 @@
         function toggleDailyReportMenu() {
             document.getElementById('dailyreport-dropdown').classList.toggle('hidden');
         }
+        function openProfileMenu() {
+            document.getElementById('profile-dropdown').classList.remove('hidden');
+        }
+        function toggleProfileMenu() {
+            document.getElementById('profile-dropdown').classList.toggle('hidden');
+        }
 
         // Close dropdowns when clicking outside
         document.addEventListener('click', function (e) {
@@ -347,7 +353,8 @@
                 { wrapper: 'staff-menu-wrapper', dropdown: 'staff-dropdown' },
                 { wrapper: 'it-menu-wrapper', dropdown: 'it-dropdown' },
                 { wrapper: 'stock-menu-wrapper', dropdown: 'stock-dropdown' },
-                { wrapper: 'dailyreport-menu-wrapper', dropdown: 'dailyreport-dropdown' }
+                { wrapper: 'dailyreport-menu-wrapper', dropdown: 'dailyreport-dropdown' },
+                { wrapper: 'profile-menu-wrapper', dropdown: 'profile-dropdown' }
             ];
 
             dropdowns.forEach(item => {

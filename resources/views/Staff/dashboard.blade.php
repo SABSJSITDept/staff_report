@@ -86,8 +86,7 @@
         <p class="text-sm text-green-800 font-medium">Today's report has been submitted!</p>
         <p class="text-xs text-green-600 mt-0.5">{{ $todayReport->tasks->count() }} task(s) added.</p>
     </div>
-    <a href="{{ route('daily-report.edit', $todayReport->id) }}"
-       class="text-xs font-medium text-green-700 hover:text-green-900 underline transition">Edit</a>
+    </div>
 </div>
 @else
 <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3.5 flex items-center gap-3">
@@ -417,9 +416,7 @@
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-6 py-4 font-medium text-gray-800">{{ \Carbon\Carbon::parse($rep->report_date)->format('d M Y') }}</td>
                     <td class="px-6 py-4 text-gray-500">{{ $rep->tasks->count() }} tasks</td>
-                    <td class="px-6 py-4 text-right">
-                        <a href="{{ route('daily-report.edit', $rep->id) }}" class="text-indigo-600 hover:text-indigo-800 font-bold">Edit</a>
-                    </td>
+                    <td class="px-6 py-4 text-right text-gray-400">—</td>
                 </tr>
                 @endforeach
             </tbody>

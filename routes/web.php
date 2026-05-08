@@ -100,4 +100,5 @@ Route::middleware('auth')->prefix('daily-report')->name('daily-report.')->group(
     Route::get('/{dailyReport}/edit',   [DailyReportController::class, 'edit'])->name('edit');
     Route::put('/{dailyReport}',        [DailyReportController::class, 'update'])->name('update');
     Route::delete('/{dailyReport}',     [DailyReportController::class, 'destroy'])->name('destroy');
+    Route::get('/last-tasks',           [DailyReportController::class, 'getLastTasks'])->name('last-tasks');
 });
