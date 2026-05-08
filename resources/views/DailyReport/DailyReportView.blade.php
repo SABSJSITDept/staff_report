@@ -403,6 +403,13 @@
 
         try {
             const res  = await fetch('/daily-report/' + id, { headers: { 'Accept': 'application/json' } });
+            
+            if (res.status === 419) {
+                document.getElementById('detail-content').innerHTML =
+                    `<p class="text-center text-red-400 py-8 text-sm">Session expire ho gayi hai. Please page refresh karein.</p>`;
+                return;
+            }
+
             if (!res.ok) {
                 throw new Error('Server returned ' + res.status);
             }

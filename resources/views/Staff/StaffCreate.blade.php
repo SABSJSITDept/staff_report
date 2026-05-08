@@ -447,9 +447,9 @@
 
 @push('scripts')
 <script>
-    const API_BASE   = '/api/staff';
-    const DEPT_API   = '/api/departments';
-    const OFFICE_API = '/api/offices';
+    const API_BASE   = '{{ url("/api/staff") }}';
+    const DEPT_API   = '{{ url("/api/departments") }}';
+    const OFFICE_API = '{{ url("/api/offices") }}';
 
     const HEADERS = {
         'Accept': 'application/json',
@@ -578,7 +578,7 @@
                 document.getElementById('photo-preview-wrap').classList.remove('hidden');
             }
 
-            document.getElementById('form-heading').textContent  = 'Staff Edit Karein';
+            document.getElementById('form-title').textContent  = 'Staff Edit Karein';
             document.getElementById('breadcrumb-label').textContent = 'Edit Staff';
             document.getElementById('submit-label').textContent  = 'Update Karein';
         } catch (e) {
@@ -593,7 +593,7 @@
         document.getElementById('photo-preview-wrap').classList.add('hidden');
         document.getElementById('photo-preview').src = '';
         clearFieldErrors();
-        document.getElementById('form-heading').textContent  = 'Naya Staff Add Karein';
+        document.getElementById('form-title').textContent  = 'Naya Staff Add Karein';
         document.getElementById('breadcrumb-label').textContent  = 'New Staff';
         document.getElementById('submit-label').textContent  = 'Save Karein';
         loadDepartments();
@@ -661,6 +661,11 @@
                 body: formData,
             });
 
+            if (response.status === 419) {
+                showToast('Session expire ho gayi hai. Please page refresh karein.', 'error');
+                return;
+            }
+
             const res = await response.json();
 
             if (response.ok && res.success) {
@@ -677,6 +682,7 @@
                 showToast(res.message || 'Kuch galat ho gaya. Dobara try karein.', 'error');
             }
         } catch (err) {
+            console.error(err);
             showToast('Network error. Server se connect nahi ho saka.', 'error');
         } finally {
             btn.disabled = false;

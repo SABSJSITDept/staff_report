@@ -31,6 +31,21 @@ class DailyReportController extends Controller
 
         $reports = $query->get();
 
+        // Statistics for dashboard
+        $statsQuery = DailyReport::query();
+        if (Auth::user()->role === 'staff') {
+            $statsQuery->where('staff_id', Auth::id());
+        }
+
+        $totalReports = (clone $statsQuery)->count();
+        $todayReports = (clone $statsQuery)->whereDate('report_date', now()->toDateString())->count();
+        
+        $reportIds = (clone $statsQuery)->pluck('id');
+        $totalTasks = DailyReportTask::whereIn('daily_report_id', $reportIds)->count();
+        $doneTasks = DailyReportTask::whereIn('daily_report_id', $reportIds)->where('status', 'completed')->count();
+        
+        $completionRate = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
+
         // Fetch staff for dropdown (Admin/Manager only)
         $allStaff = [];
         if (Auth::user()->role !== 'staff') {
@@ -39,7 +54,14 @@ class DailyReportController extends Controller
                 ->get();
         }
 
-        return view('DailyReport.DailyReportView', compact('reports', 'allStaff'));
+        return view('DailyReport.DailyReportView', compact(
+            'reports', 
+            'allStaff', 
+            'totalReports', 
+            'todayReports', 
+            'totalTasks', 
+            'completionRate'
+        ));
     }
 
     public function export(Request $request)

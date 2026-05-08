@@ -201,7 +201,7 @@
     const EXISTING_TASKS = JSON.parse(_cfg.existingTasks);
     const STORE_URL    = _cfg.storeUrl;
     const INDEX_URL    = _cfg.indexUrl;
-    const UPDATE_URL   = IS_EDIT ? '/daily-report/' + REPORT_ID : null;
+    const UPDATE_URL   = IS_EDIT ? '{{ url("/daily-report") }}/' + REPORT_ID : null;
     const CSRF_TOKEN   = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     let taskIndex = 0;
@@ -405,6 +405,14 @@
                 },
                 body: JSON.stringify(data),
             });
+
+            if (res.status === 419) {
+                showToast('Session expire ho gayi hai. Please page refresh karein.', 'error');
+                label.textContent = IS_EDIT ? 'Update Report' : 'Submit Report';
+                btn.disabled = false;
+                return;
+            }
+
             const json = await res.json();
 
             if (json.success) {
@@ -416,11 +424,12 @@
                     btn.disabled = false;
                 }
             } else {
-                showToast(json.message || 'Something went wrong!', 'error');
+                showToast(json.message || 'Kuch galat hua!', 'error');
                 label.textContent = IS_EDIT ? 'Update Report' : 'Submit Report';
                 btn.disabled = false;
             }
         } catch (err) {
+            console.error(err);
             showToast('Network error: ' + err.message, 'error');
             label.textContent = IS_EDIT ? 'Update Report' : 'Submit Report';
             btn.disabled = false;
