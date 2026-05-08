@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DailyReportController;
 use App\Http\Controllers\StaffDashboardController;
+use App\Http\Controllers\ITTicketController;
 
 // Redirect root to login
 Route::get('/', fn() => redirect()->route('login'));
@@ -101,4 +102,15 @@ Route::middleware('auth')->prefix('daily-report')->name('daily-report.')->group(
     Route::put('/{dailyReport}',        [DailyReportController::class, 'update'])->name('update');
     Route::delete('/{dailyReport}',     [DailyReportController::class, 'destroy'])->name('destroy');
     Route::get('/last-tasks',           [DailyReportController::class, 'getLastTasks'])->name('last-tasks');
+});
+
+// IT Troubleshooting Ticket System
+Route::middleware('auth')->prefix('it-tickets')->name('it-tickets.')->group(function () {
+    Route::get('/', [ITTicketController::class, 'index'])->name('index');
+    Route::get('/create', [ITTicketController::class, 'create'])->name('create');
+    Route::post('/', [ITTicketController::class, 'store'])->name('store');
+    Route::get('/{itTicket}', [ITTicketController::class, 'show'])->name('show');
+    Route::post('/{itTicket}/reply', [ITTicketController::class, 'reply'])->name('reply');
+    Route::post('/{itTicket}/status', [ITTicketController::class, 'updateStatus'])->name('update-status');
+    Route::post('/{itTicket}/assign-time', [ITTicketController::class, 'assignTime'])->name('assign-time');
 });
