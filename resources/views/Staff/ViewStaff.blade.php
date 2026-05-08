@@ -242,15 +242,13 @@
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Office</th>
-                    <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
                     <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">DOJ</th>
-                    <th class="px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     <th class="sticky right-0 px-4 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center bg-gray-50 z-30 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">Actions</th>
                 </tr>
             </thead>
             <tbody id="staff-table-body" class="divide-y divide-gray-50">
                 <tr>
-                    <td colspan="11" class="px-5 py-12 text-center">
+                    <td colspan="10" class="px-5 py-12 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <svg class="w-8 h-8 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -366,7 +364,7 @@
         if (staff.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="11" class="px-5 py-14 text-center">
+                    <td colspan="10" class="px-5 py-14 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                                 <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -403,22 +401,7 @@
                 </td>
                 <td class="px-4 py-3 text-gray-500 text-xs">${s.designation}</td>
                 <td class="px-4 py-3 text-gray-500 text-xs">${s.office_name ?? '—'}</td>
-                <td class="px-4 py-3">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-tight
-                        ${s.role === 'admin' ? 'bg-purple-100 text-purple-700' : 
-                          (s.role === 'manager' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600')}">
-                        ${s.role ?? 'staff'}
-                    </span>
-                </td>
                 <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(s.doj)}</td>
-                <td class="px-4 py-3">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
-                        ${s.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'}">
-                        <span class="w-1.5 h-1.5 rounded-full ${s.status === 'Active' ? 'bg-green-500' : 'bg-red-400'}"></span>
-                        ${s.status}
-                        ${s.left_date ? `<span class="text-xs opacity-70">(${fmtDate(s.left_date)})</span>` : ''}
-                    </span>
-                </td>
                 <td class="sticky right-0 px-4 py-3 text-center bg-white group-hover:bg-indigo-50 transition-colors z-10 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.05)]">
                     <div class="flex items-center justify-center gap-1.5 opacity-70 group-hover:opacity-100 transition flex-wrap min-w-[180px]">
                         <a href="/staff/create?id=${s.id}"
