@@ -39,6 +39,12 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="bg-red-50 border border-red-300 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <!-- Form -->
             <form method="POST" action="{{ route('login') }}">
                 @csrf
@@ -62,12 +68,7 @@
                                transition" />
                 </div>
 
-                <!-- Remember Me -->
-                <div class="flex items-center mb-6">
-                    <input type="checkbox" id="remember" name="remember"
-                        class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                    <label for="remember" class="ml-2 text-sm text-gray-600">Remember Me</label>
-                </div>
+
 
                 <!-- Submit -->
                 <button type="submit"
