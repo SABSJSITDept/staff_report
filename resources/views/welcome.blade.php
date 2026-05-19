@@ -6,6 +6,9 @@
 
         <title>Laravel</title>
         <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#4f46e5">
+        <link rel="apple-touch-icon" href="/images/icon-192.png">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -130,5 +133,12 @@
                 </div>
             </div>
         </div>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js');
+                });
+            }
+        </script>
     </body>
 </html>

@@ -1,0 +1,23 @@
+{
+  "name": "Staff Daily Report",
+  "short_name": "Staff Report",
+  "start_url": "/",
+  "background_color": "#4f46e5",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

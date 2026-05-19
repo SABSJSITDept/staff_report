@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login &mdash; Staff Daily Report</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gradient-to-br from-indigo-100 to-blue-50 min-h-screen flex items-center justify-center">
@@ -83,5 +86,12 @@
         <p class="text-center text-xs text-gray-400 mt-6">&copy; {{ date('Y') }} Staff Daily Report</p>
     </div>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
 </body>
 </html>
