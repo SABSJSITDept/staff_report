@@ -40,7 +40,7 @@ pub fn run() {
             if let Some(webview_window) = app.get_webview_window("main") {
                 let url_str = get_config_url();
                 if let Ok(url) = tauri::Url::parse(&url_str) {
-                    let _ = webview_window.navigate(tauri::webview::WebviewUrl::External(url));
+                    let _ = webview_window.navigate(url);
                 }
             }
 
