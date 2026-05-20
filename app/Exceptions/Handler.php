@@ -31,7 +31,7 @@ class Handler extends ExceptionHandler
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['message' => 'CSRF token mismatch. Please reload the page.'], 419);
             }
-            return redirect()->route('login')->with('error', 'Aapka session expire ho gya hai. Kripya waps login karein.');
+            return redirect()->back()->withInput($request->except('_token'))->with('error', 'Aapka page expire ho gya tha. Kripya dobara koshish karein.');
         });
     }
 }
