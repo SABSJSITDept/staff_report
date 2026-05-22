@@ -44,9 +44,9 @@
                 </svg>
             </div>
             <select id="staffSearch" class="block w-full pl-10 pr-10 py-2 border border-slate-200/80 rounded-2xl bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 text-sm shadow-xs transition appearance-none cursor-pointer">
-                <option value="">All Staff Members</option>
+                <option value="" data-office="">All Staff Members</option>
                 @foreach($allStaff as $staff)
-                    <option value="{{ strtolower($staff->name) }}">{{ $staff->name }}</option>
+                    <option value="{{ strtolower($staff->name) }}" data-office="{{ $staff->staff?->office_id }}">{{ $staff->name }}</option>
                 @endforeach
             </select>
             <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none z-10">
@@ -100,7 +100,7 @@
         </div>
         <div>
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Staff</p>
-            <p class="text-2xl font-bold text-slate-800 mt-0.5">{{ $totalStaffCount }}</p>
+            <p class="text-2xl font-bold text-slate-800 mt-0.5" id="statTotalStaff">{{ $totalStaffCount }}</p>
         </div>
     </div>
 
@@ -116,7 +116,7 @@
         </div>
         <div>
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Now</p>
-            <p class="text-2xl font-bold text-emerald-600 mt-0.5">{{ $liveCount }}</p>
+            <p class="text-2xl font-bold text-emerald-600 mt-0.5" id="statLive">{{ $liveCount }}</p>
         </div>
     </div>
 
@@ -128,7 +128,7 @@
         </div>
         <div>
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Paused Tasks</p>
-            <p class="text-2xl font-bold text-amber-500 mt-0.5">{{ $pausedCount }}</p>
+            <p class="text-2xl font-bold text-amber-500 mt-0.5" id="statPaused">{{ $pausedCount }}</p>
         </div>
     </div>
 
@@ -140,7 +140,7 @@
         </div>
         <div>
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Idle Staff</p>
-            <p class="text-2xl font-bold text-slate-600 mt-0.5">{{ $idleCount }}</p>
+            <p class="text-2xl font-bold text-slate-600 mt-0.5" id="statIdle">{{ $idleCount }}</p>
         </div>
     </div>
 </div>
@@ -197,8 +197,13 @@
                         $completedCount = $completedTasks->count();
                         $completionPercent = $totalTasksCount > 0 ? round(($completedCount / $totalTasksCount) * 100) : 0;
                     @endphp
-
-                    <tr class="staff-row hover:bg-slate-50/30 transition-colors" data-name="{{ strtolower($staff->name) }}" data-office="{{ $staff->staff->office_id ?? '' }}">
+                    @php
+                        $rowStatus = 'idle';
+                        if ($isLive) $rowStatus = 'live';
+                        elseif ($hasPaused) $rowStatus = 'paused';
+                        elseif ($workedToday) $rowStatus = 'completed';
+                    @endphp
+                    <tr class="staff-row hover:bg-slate-50/30 transition-colors" data-name="{{ strtolower($staff->name) }}" data-office="{{ $staff->staff->office_id ?? '' }}" data-status="{{ $rowStatus }}">
                         <!-- Personnel Info -->
                         <td class="px-8 py-6">
                             <div class="flex items-center gap-4">
@@ -297,7 +302,7 @@
                                                 </div>
 
                                                 @if($task->description)
-                                                    <p class="text-[11px] text-slate-400 mt-1 break-words leading-relaxed whitespace-normal">{{ $task->description }}</p>
+                                                    <p class="text-[11px] text-slate-400 mt-1 break-words leading-relaxed whitespace-pre-wrap">{{ $task->description }}</p>
                                                 @endif
 
                                                 <!-- Soft metadata duration labels -->
@@ -423,6 +428,7 @@
                         <tr>
                             <th class="px-4 py-2.5">Date</th>
                             <th class="px-4 py-2.5">Status</th>
+                            <th class="px-4 py-2.5">Description</th>
                             <th class="px-4 py-2.5 text-right">Time Logged</th>
                         </tr>
                     </thead>
@@ -452,9 +458,15 @@
             const selectedOfficeId = officeSelect ? officeSelect.value.trim() : '';
             let visibleCount = 0;
 
+            let countTotal = 0;
+            let countLive = 0;
+            let countPaused = 0;
+            let countIdle = 0;
+
             staffRows.forEach(row => {
                 const staffName = row.getAttribute('data-name') || '';
                 const officeId = row.getAttribute('data-office') || '';
+                const rowStatus = row.getAttribute('data-status') || 'idle';
 
                 const matchesStaff = !selectedStaffName || staffName === selectedStaffName;
                 const matchesOffice = !selectedOfficeId || officeId === selectedOfficeId;
@@ -462,10 +474,26 @@
                 if (matchesStaff && matchesOffice) {
                     row.style.display = '';
                     visibleCount++;
+                    
+                    countTotal++;
+                    if (rowStatus === 'live') countLive++;
+                    else if (rowStatus === 'paused') countPaused++;
+                    else if (rowStatus === 'idle') countIdle++;
                 } else {
                     row.style.display = 'none';
                 }
             });
+
+            // Update Header Stats
+            const statTotalStaff = document.getElementById('statTotalStaff');
+            const statLive = document.getElementById('statLive');
+            const statPaused = document.getElementById('statPaused');
+            const statIdle = document.getElementById('statIdle');
+
+            if (statTotalStaff) statTotalStaff.textContent = countTotal;
+            if (statLive) statLive.textContent = countLive;
+            if (statPaused) statPaused.textContent = countPaused;
+            if (statIdle) statIdle.textContent = countIdle;
 
             // Handle "No results found" row
             const noResultsRow = document.getElementById('noResultsRow');
@@ -474,6 +502,31 @@
                     noResultsRow.classList.remove('hidden');
                 } else {
                     noResultsRow.classList.add('hidden');
+                }
+            }
+
+            // Update Staff Dropdown options to match Office
+            if (staffSelect && officeSelect) {
+                let currentStaffHidden = false;
+                Array.from(staffSelect.options).forEach(opt => {
+                    if (opt.value === '') return; // keep "All Staff" always visible
+                    const optOfficeId = opt.getAttribute('data-office');
+                    if (selectedOfficeId && optOfficeId !== selectedOfficeId) {
+                        opt.style.display = 'none';
+                        opt.disabled = true;
+                        if (staffSelect.value === opt.value) {
+                            currentStaffHidden = true;
+                        }
+                    } else {
+                        opt.style.display = '';
+                        opt.disabled = false;
+                    }
+                });
+
+                if (currentStaffHidden) {
+                    staffSelect.value = '';
+                    // Need to re-trigger applyFilters to show all staff of this office
+                    setTimeout(applyFilters, 0);
                 }
             }
         }
@@ -516,10 +569,11 @@
                         else statusHtml = '<span class="text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 text-[9px] font-bold uppercase tracking-wider">Completed</span>';
 
                         tbody.innerHTML += `
-                            <tr class="hover:bg-slate-50/50 transition">
-                                <td class="px-4 py-3 text-xs font-semibold text-slate-700">${item.date}</td>
-                                <td class="px-4 py-3">${statusHtml}</td>
-                                <td class="px-4 py-3 text-right text-xs font-bold text-slate-800">${item.time_spend}</td>
+                            <tr class="hover:bg-slate-50/50 transition border-b border-slate-50 last:border-0">
+                                <td class="px-4 py-3 text-xs font-semibold text-slate-700 align-top">${item.date}</td>
+                                <td class="px-4 py-3 align-top">${statusHtml}</td>
+                                <td class="px-4 py-3 text-[11px] text-slate-500 whitespace-pre-wrap leading-relaxed">${item.description || '—'}</td>
+                                <td class="px-4 py-3 text-right text-xs font-bold text-slate-800 align-top">${item.time_spend}</td>
                             </tr>
                         `;
                     });

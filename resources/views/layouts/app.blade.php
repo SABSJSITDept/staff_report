@@ -299,8 +299,17 @@
                             <span class="capitalize bg-indigo-500 px-2 py-0.5 rounded text-xs ml-1">{{ Auth::user()->role }}</span>
                         </button>
                         <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-1 hidden border border-gray-100 z-50">
+                            <button onclick="window.location.reload(true)" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
+                                <span class="flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    Refresh App
+                                </span>
+                            </button>
                             <button onclick="document.getElementById('global-change-password-modal').classList.remove('hidden')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                Change Password
+                                <span class="flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                    Change Password
+                                </span>
                             </button>
                             <form method="POST" action="{{ route('logout') }}" class="block w-full">
                                 @csrf
@@ -355,7 +364,10 @@
             <div class="px-4 py-3 border-b border-indigo-700 mb-2">
                 <div class="text-base font-medium">{{ Auth::user()->name }}</div>
                 <div class="text-sm text-indigo-300 capitalize">{{ Auth::user()->role }}</div>
-                <div class="mt-2 flex gap-2">
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button onclick="window.location.reload(true)" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-3 py-1.5 rounded transition">
+                        Refresh App
+                    </button>
                     <button onclick="document.getElementById('global-change-password-modal').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded transition">
                         Change Password
                     </button>
@@ -449,6 +461,24 @@
                     .catch(err => console.error('Service Worker registration failed:', err));
             });
         }
+
+        // Global Fetch Interceptor to handle Session Expiration (419 CSRF Token Mismatch & 401 Unauthorized)
+        const originalFetch = window.fetch;
+        window.fetch = async function() {
+            try {
+                const response = await originalFetch.apply(this, arguments);
+                if (response.status === 419 || response.status === 401) {
+                    if (typeof showToast === 'function') {
+                        showToast('Session expired. Refreshing page to secure your session...', 'error');
+                    }
+                    setTimeout(() => window.location.reload(), 1500);
+                    return Promise.reject('Session Expired');
+                }
+                return response;
+            } catch (error) {
+                throw error;
+            }
+        };
 
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');

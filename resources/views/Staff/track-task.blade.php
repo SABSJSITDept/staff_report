@@ -52,10 +52,16 @@
                             <input type="text" value="{{ $activeTask->task_title }}" readonly
                                    class="w-full px-4 py-2.5 border border-green-200 rounded-xl text-sm bg-green-50/50 text-gray-700 cursor-not-allowed">
                         </div>
+                        @if($activeTask->description)
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Description (Update before ending)</label>
-                            <textarea id="end_task_desc" rows="2"
-                                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-green-400 focus:outline-none transition resize-none">{{ $activeTask->description }}</textarea>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Previous Updates</label>
+                            <div class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-600 whitespace-pre-wrap max-h-32 overflow-y-auto">{{ $activeTask->description }}</div>
+                        </div>
+                        @endif
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Add New Update</label>
+                            <textarea id="end_task_desc" rows="2" placeholder="Type your new update here..."
+                                      class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-green-400 focus:outline-none transition resize-none"></textarea>
                         </div>
                     </div>
                     <div class="flex items-center justify-between pt-2">
@@ -67,6 +73,13 @@
                             Started at: {{ \Carbon\Carbon::parse($activeTask->start_time)->format('h:i A') }}
                         </div>
                         <div class="flex items-center gap-3">
+                            <button type="button" onclick="logActiveTaskUpdate({{ $activeTask->id }})" id="log-task-btn"
+                                    class="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Log Update
+                            </button>
                             <button type="button" onclick="pauseActiveTask({{ $activeTask->id }})" id="pause-task-btn"
                                     class="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -118,6 +131,46 @@
     </div>
 </div>
 
+{{-- Other Task Tracker Widget --}}
+<div class="mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+        <div class="px-6 py-5 bg-gradient-to-r from-blue-50 to-white">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-100">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800">Quick Add: Other Task</h3>
+                    <p class="text-xs text-gray-500">
+                        Add miscellaneous updates. This task will not track time and multiple updates will be saved under "Other Task" today.
+                    </p>
+                </div>
+            </div>
+            
+            <form id="other-task-form" class="space-y-4">
+                @csrf
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <textarea id="other_task_desc" required rows="2" placeholder="Describe the miscellaneous task you just did..."
+                                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-400 focus:outline-none transition resize-none"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="submit" id="other-task-btn"
+                            class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Add to Other Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {{-- Today's Work Summary (Live & Completed Tasks) --}}
 <div class="mb-6">
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -153,7 +206,7 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-gray-500 max-w-[300px]" title="{{ $t->description }}">{{ $t->description ?: '—' }}</td>
+                                <td class="px-6 py-4 text-gray-500 max-w-[300px] whitespace-pre-wrap leading-relaxed" title="{{ $t->description }}">{{ $t->description ?: '—' }}</td>
                                 <td class="px-6 py-4 text-center text-xs text-gray-500 font-medium whitespace-nowrap">
                                     {{ \Carbon\Carbon::parse($t->start_time ?: $t->created_at)->format('h:i A') }} 
                                     — 
@@ -269,6 +322,7 @@
                         <tr>
                             <th class="px-4 py-2">Date</th>
                             <th class="px-4 py-2">Status</th>
+                            <th class="px-4 py-2">Description</th>
                             <th class="px-4 py-2 text-right">Time Spent</th>
                         </tr>
                     </thead>
@@ -445,6 +499,74 @@
         });
     }
 
+    const otherForm = document.getElementById('other-task-form');
+    if (otherForm) {
+        otherForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('other-task-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Adding...';
+
+            fetch('{{ route('daily-report.task.other') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: document.getElementById('other_task_desc').value,
+                })
+            }).then(res => res.json()).then(data => {
+                if(data.success) location.reload();
+                else { showToast(data.message, 'error'); btn.disabled = false; btn.innerHTML = 'Add to Other Task'; }
+            }).catch(err => {
+                showToast('An error occurred.', 'error'); btn.disabled = false; btn.innerHTML = 'Add to Other Task';
+            });
+        });
+    }
+
+    // Pause Active Task
+    function logActiveTaskUpdate(taskId) {
+        const descInput = document.getElementById('end_task_desc');
+        const descValue = descInput ? descInput.value.trim() : '';
+        
+        if (!descValue) {
+            showToast('Please enter a description to log.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('log-task-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = 'Logging...';
+        }
+
+        fetch('{{ url("daily-report/task") }}/' + taskId + '/update-desc', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                description: descValue
+            })
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                showToast(data.message, 'success');
+                if (descInput) descInput.value = ''; // clear the box
+                setTimeout(() => location.reload(), 1000);
+            } else { 
+                showToast(data.message, 'error'); 
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Log Update'; } 
+            }
+        }).catch(err => {
+            showToast('An error occurred while logging update.', 'error'); 
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Log Update'; }
+        });
+    }
+
     // Pause Active Task
     function pauseActiveTask(taskId) {
         showConfirmToast('Do you really want to pause this task?', function() {
@@ -570,10 +692,11 @@
                         else statusHtml = '<span class="text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border border-gray-100">Completed</span>';
 
                         tbody.innerHTML += `
-                            <tr>
-                                <td class="px-4 py-3 font-medium text-gray-700">${item.date}</td>
-                                <td class="px-4 py-3">${statusHtml}</td>
-                                <td class="px-4 py-3 text-right font-bold text-gray-800">${item.time_spend}</td>
+                            <tr class="border-b border-gray-100 last:border-0">
+                                <td class="px-4 py-3 font-medium text-gray-700 align-top">${item.date}</td>
+                                <td class="px-4 py-3 align-top">${statusHtml}</td>
+                                <td class="px-4 py-3 text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">${item.description || '—'}</td>
+                                <td class="px-4 py-3 text-right font-bold text-gray-800 align-top whitespace-nowrap">${item.time_spend}</td>
                             </tr>
                         `;
                     });

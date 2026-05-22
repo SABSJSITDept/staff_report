@@ -110,9 +110,11 @@ Route::middleware('auth')->prefix('daily-report')->name('daily-report.')->group(
     Route::get('/',          [DailyReportController::class, 'index'])->name('index');
     Route::get('/live-tasks', [DailyReportController::class, 'liveTasks'])->name('live-tasks');
     Route::post('/task/start', [DailyReportController::class, 'startTask'])->name('task.start');
+    Route::post('/task/other', [DailyReportController::class, 'addOtherTask'])->name('task.other');
     Route::post('/task/{task}/end', [DailyReportController::class, 'endTask'])->name('task.end');
     Route::post('/task/{task}/pause', [DailyReportController::class, 'pauseTask'])->name('task.pause');
     Route::post('/task/{task}/resume', [DailyReportController::class, 'resumeTask'])->name('task.resume');
+    Route::post('/task/{task}/update-desc', [DailyReportController::class, 'updateTaskDescription'])->name('task.update-desc');
     Route::get('/task/{task}/history', [DailyReportController::class, 'getTaskHistory'])->name('task.history');
     
     Route::get('/export',    [DailyReportController::class, 'export'])->name('export');

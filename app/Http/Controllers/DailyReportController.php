@@ -482,8 +482,14 @@ class DailyReportController extends Controller
             $timeSpend = $task->time_spend;
         }
 
+        $newDescription = $task->description;
+        if ($request->description) {
+            $timestamp = now()->format('d M, h:i A');
+            $newDescription = $newDescription ? $newDescription . "\n[" . $timestamp . "] " . $request->description : "[" . $timestamp . "] " . $request->description;
+        }
+
         $task->update([
-            'description' => $request->description ?: $task->description,
+            'description' => $newDescription,
             'status' => 'completed',
             'end_time' => $endTime,
             'time_spend' => trim($timeSpend)
@@ -579,7 +585,8 @@ class DailyReportController extends Controller
                 $historyData[] = [
                     'date' => \Carbon\Carbon::parse($hTask->report_date)->format('d M Y'),
                     'time_spend' => $timeStr ?: '0m',
-                    'status' => $hTask->status
+                    'status' => $hTask->status,
+                    'description' => $hTask->description
                 ];
             }
         }
@@ -621,7 +628,14 @@ class DailyReportController extends Controller
         // Sum with existing time_spend
         $totalTime = $this->sumTimeStrings($task->time_spend, $segmentTime);
 
+        $newDescription = $task->description;
+        if ($request->description) {
+            $timestamp = now()->format('d M, h:i A');
+            $newDescription = $newDescription ? $newDescription . "\n[" . $timestamp . "] " . $request->description : "[" . $timestamp . "] " . $request->description;
+        }
+
         $task->update([
+            'description' => $newDescription,
             'status' => 'paused',
             'time_spend' => trim($totalTime),
             'end_time' => null, // Just paused, not finished
@@ -658,6 +672,61 @@ class DailyReportController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'Task resumed successfully', 'task' => $task]);
+    }
+
+    public function addOtherTask(Request $request)
+    {
+        $request->validate([
+            'description' => 'required|string',
+        ]);
+
+        $today = now()->toDateString();
+        $report = DailyReport::firstOrCreate(
+            ['staff_id' => Auth::id(), 'report_date' => $today],
+            ['pending_task' => 'Other Task Tracking', 'planned_task' => 'Other Task Tracking']
+        );
+
+        $task = $report->tasks()->where('task_title', 'Other Task')->first();
+        
+        $timestamp = now()->format('d M, h:i A');
+        $appendDesc = "[" . $timestamp . "] " . $request->description;
+
+        if ($task) {
+            $newDescription = $task->description ? $task->description . "\n" . $appendDesc : $appendDesc;
+            $task->update([
+                'description' => $newDescription
+            ]);
+        } else {
+            $task = $report->tasks()->create([
+                'task_title' => 'Other Task',
+                'description' => $appendDesc,
+                'status' => 'completed',
+                'time_spend' => null,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Other task updated successfully', 'task' => $task]);
+    }
+
+    public function updateTaskDescription(Request $request, DailyReportTask $task)
+    {
+        if ($task->dailyReport->staff_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'description' => 'required|string',
+        ]);
+
+        $newDescription = $task->description;
+        $timestamp = now()->format('d M, h:i A');
+        $newDescription = $newDescription ? $newDescription . "\n[" . $timestamp . "] " . $request->description : "[" . $timestamp . "] " . $request->description;
+
+        $task->update([
+            'description' => $newDescription,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Task update logged successfully', 'task' => $task]);
     }
 
 

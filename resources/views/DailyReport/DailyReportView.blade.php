@@ -299,7 +299,7 @@
                                                 @endif
                                             </p>
                                             @if($task->description)
-                                                <p class="text-xs text-slate-400 mt-1 leading-relaxed line-clamp-2" title="{{ $task->description }}">{{ $task->description }}</p>
+                                                <p class="text-xs text-slate-400 mt-1 leading-relaxed whitespace-pre-wrap" title="{{ $task->description }}">{{ $task->description }}</p>
                                             @endif
                                         </div>
                                     </td>
@@ -523,7 +523,7 @@
                             </div>
                             <span class="flex-shrink-0 px-2 py-0.5 rounded-lg text-xs font-semibold ${statusBadge[t.status]||''}">${statusLabel[t.status]||t.status}</span>
                         </div>
-                        ${t.description ? `<p class="text-xs text-gray-500 mt-1.5 leading-relaxed">${esc(t.description)}</p>` : ''}
+                        ${t.description ? `<p class="text-xs text-gray-500 mt-1.5 leading-relaxed whitespace-pre-wrap">${esc(t.description)}</p>` : ''}
                         
                         <div class="flex items-center gap-3 mt-2 flex-wrap">
                             ${durationStr ? `
