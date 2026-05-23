@@ -249,12 +249,10 @@
                     <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/20 px-3 py-1 rounded-lg group-task-count">
                         {{ $totalTasksForDay }} {{ Str::plural('task', $totalTasksForDay) }}
                     </span>
-                    @if($dayTimeStr)
-                        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 px-3 py-1 rounded-lg flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            {{ $dayTimeStr }}
-                        </span>
-                    @endif
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 px-3 py-1 rounded-lg flex items-center gap-1 group-task-time-container" style="{{ $dayTimeStr ? '' : 'display: none;' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="group-task-time-text">{{ $dayTimeStr }}</span>
+                    </span>
                 </div>
             </div>
             
@@ -275,7 +273,7 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach($dayReports as $report)
                             @foreach($report->tasks as $task)
-                                <tr class="hover:bg-slate-50/50 transition-colors task-row" data-staff-id="{{ $report->staff_id }}">
+                                <tr class="hover:bg-slate-50/50 transition-colors task-row" data-staff-id="{{ $report->staff_id }}" data-time-spend="{{ strtolower($task->time_spend) }}">
                                     @if(Auth::user()->role !== 'staff')
                                         <td class="px-6 py-4">
                                             <div class="flex items-center gap-3">
@@ -637,12 +635,21 @@
             // Filter tasks inside this date group
             const tasks = group.querySelectorAll('.task-row');
             let visibleTasksInGroup = 0;
+            let groupMinutes = 0;
 
             tasks.forEach(task => {
                 const sidMatch = !staffId || task.dataset.staffId === staffId;
                 if (sidMatch) {
                     task.style.display = '';
                     visibleTasksInGroup++;
+                    
+                    const ts = task.dataset.timeSpend || '';
+                    let m = 0;
+                    let match;
+                    if (match = ts.match(/(\d+)\s*h/)) m += parseInt(match[1]) * 60;
+                    if (match = ts.match(/(\d+)\s*m/)) m += parseInt(match[1]);
+                    if (match = ts.match(/(\d+):(\d+)/)) m += parseInt(match[1]) * 60 + parseInt(match[2]);
+                    groupMinutes += m;
                 } else {
                     task.style.display = 'none';
                 }
@@ -655,6 +662,20 @@
                 if (groupCountBadge) {
                     groupCountBadge.textContent = visibleTasksInGroup + (visibleTasksInGroup === 1 ? ' task' : ' tasks');
                 }
+                
+                const groupTimeContainer = group.querySelector('.group-task-time-container');
+                const groupTimeText = group.querySelector('.group-task-time-text');
+                if (groupTimeContainer && groupTimeText) {
+                    if (groupMinutes > 0) {
+                        const dh = Math.floor(groupMinutes / 60);
+                        const dm = groupMinutes % 60;
+                        groupTimeText.textContent = (dh > 0 ? dh + 'h ' : '') + (dm > 0 ? dm + 'm' : '');
+                        groupTimeContainer.style.display = 'flex';
+                    } else {
+                        groupTimeContainer.style.display = 'none';
+                    }
+                }
+                
                 totalVisibleTasks += visibleTasksInGroup;
             } else {
                 group.style.display = 'none';
