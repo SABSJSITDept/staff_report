@@ -100,7 +100,7 @@ class StaffDashboardController extends Controller
               ->whereDate('report_date', today());
         })->where('status', 'in_progress')->first();
 
-        $todayTasks = $todayReport ? $todayReport->tasks()->orderBy('created_at', 'asc')->get() : collect();
+        $todayTasks = $todayReport ? $todayReport->tasks()->withCount('comments')->orderBy('created_at', 'asc')->get() : collect();
 
         return view('Staff.track-task', [
             'staffDetail' => $staffDetail,

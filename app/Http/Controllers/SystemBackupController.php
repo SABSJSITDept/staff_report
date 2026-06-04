@@ -59,9 +59,14 @@ class SystemBackupController extends Controller
 
         $data = $request->validate([
             'status' => 'required|in:YES,NO',
-            'location' => 'nullable|required_if:status,YES|string',
+            'location' => 'nullable|required_if:status,YES|array',
+            'location.*' => 'string',
             'remark' => 'nullable|string',
         ]);
+
+        if (isset($data['location']) && is_array($data['location'])) {
+            $data['location'] = implode(', ', $data['location']);
+        }
 
         $data['staff_id'] = $staff->id;
         $data['backup_date'] = today();

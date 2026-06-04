@@ -47,11 +47,13 @@
                 </div>
 
                 <div id="location-container" style="{{ ($todayBackup && $todayBackup->status == 'YES') ? '' : 'display: none;' }}">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Backup Location</label>
-                    <select name="location" id="location" class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-3 border font-medium">
-                        <option value="">-- Select Location --</option>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Backup Location (Hold Ctrl to select multiple)</label>
+                    @php
+                        $selectedLocations = $todayBackup && $todayBackup->location ? array_map('trim', explode(',', $todayBackup->location)) : [];
+                    @endphp
+                    <select name="location[]" id="location" multiple class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-3 border font-medium h-32">
                         @foreach($locations as $loc)
-                            <option value="{{ $loc->name }}" {{ ($todayBackup && $todayBackup->location == $loc->name) ? 'selected' : '' }}>{{ $loc->name }}</option>
+                            <option value="{{ $loc->name }}" {{ in_array($loc->name, $selectedLocations) ? 'selected' : '' }}>{{ $loc->name }}</option>
                         @endforeach
                     </select>
                 </div>

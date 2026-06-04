@@ -3,30 +3,7 @@
 
 @section('content')
 
-@php
-    $totalStaffCount = $allStaff->count();
-    $liveCount = 0;
-    $pausedCount = 0;
-    $idleCount = 0;
-    $completedCount = 0;
 
-    foreach($allStaff as $staff) {
-        $staffTasks = $todayTasks->get($staff->id) ?? collect();
-        $isLive = $staffTasks->where('status', 'in_progress')->isNotEmpty();
-        $hasPaused = $staffTasks->where('status', 'paused')->isNotEmpty();
-        $hasCompleted = $staffTasks->where('status', 'completed')->isNotEmpty();
-
-        if ($isLive) {
-            $liveCount++;
-        } elseif ($hasPaused) {
-            $pausedCount++;
-        } elseif ($hasCompleted) {
-            $completedCount++;
-        } else {
-            $idleCount++;
-        }
-    }
-@endphp
 
 <!-- Softer Search & Refresh Header -->
 <div class="mb-8 flex flex-row flex-wrap items-center justify-between gap-4">
@@ -87,6 +64,12 @@
             </svg>
             <span class="hidden sm:inline">Refresh</span>
         </button>
+        @if(in_array(Auth::user()->role, ['admin', 'manager']))
+        <button onclick="openAssignTaskModal()" class="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-2xl transition shadow-md shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            <span class="hidden sm:inline">Assign Task</span>
+        </button>
+        @endif
     </div>
 </div>
 
@@ -157,7 +140,7 @@
                     <th class="px-6 py-5 w-[15%] text-center">Summary</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-50">
+            <tbody class="divide-y-4 divide-slate-100">
                 @forelse($allStaff as $staff)
                     @php
                         $staffTasks = $todayTasks->get($staff->id) ?? collect();
@@ -203,7 +186,7 @@
                         elseif ($hasPaused) $rowStatus = 'paused';
                         elseif ($workedToday) $rowStatus = 'completed';
                     @endphp
-                    <tr class="staff-row hover:bg-slate-50/30 transition-colors" data-name="{{ strtolower($staff->name) }}" data-office="{{ $staff->staff->office_id ?? '' }}" data-status="{{ $rowStatus }}">
+                    <tr class="staff-row hover:bg-slate-50 transition-colors border-b border-slate-200 even:bg-slate-50/50" data-name="{{ strtolower($staff->name) }}" data-office="{{ $staff->staff->office_id ?? '' }}" data-status="{{ $rowStatus }}">
                         <!-- Personnel Info -->
                         <td class="px-8 py-6">
                             <div class="flex items-center gap-4">
@@ -298,7 +281,16 @@
                                                         <a href="{{ route('daily-report.task.report', $task->id) }}" target="_blank" class="text-emerald-400 hover:text-emerald-600 transition" title="View Full Report (PDF/Excel)">
                                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                         </a>
+                                                        <button type="button" onclick="openCommentsModal({{ $task->id }})" class="relative text-sky-400 hover:text-sky-600 transition" title="Discuss Task">
+                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" /></svg>
+                                                            @if($task->comments_count > 0)
+                                                                <span class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full leading-none">{{ $task->comments_count }}</span>
+                                                            @endif
+                                                        </button>
                                                     </div>
+                                                    @if($task->assigned_by)
+                                                        <span class="text-[8px] font-bold text-indigo-500 bg-indigo-50/60 px-1 py-0.2 rounded border border-indigo-100/40 uppercase tracking-wider scale-95 origin-left">Assigned by {{ $task->assignedBy->name ?? 'Manager' }}</span>
+                                                    @endif
                                                     @if($task->is_carry)
                                                         <span class="text-[8px] font-bold text-amber-500 bg-amber-50/60 px-1 py-0.2 rounded border border-amber-100/40 uppercase tracking-wider scale-95 origin-left">Continued</span>
                                                     @endif
@@ -404,6 +396,101 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+    @if(method_exists($allStaff, 'links'))
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+        {{ $allStaff->appends(request()->query())->links() }}
+    </div>
+    @endif
+</div>
+
+{{-- Assign Task Modal --}}
+<div id="assign-task-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="fixed inset-0 transition-opacity bg-slate-900/40 backdrop-blur-sm" onclick="closeAssignTaskModal()"></div>
+        <div class="relative inline-block w-full max-w-md p-6 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-3xl border border-slate-100">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-slate-800">Assign New Task</h3>
+                <button type="button" onclick="closeAssignTaskModal()" class="text-slate-400 hover:text-slate-600 transition bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="assign-task-form" onsubmit="submitAssignTask(event)">
+                @csrf
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Select Staff</label>
+                    <select name="staff_id" id="assign-staff-id" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">-- Select Staff --</option>
+                        @foreach($staffListForDropdown as $staff)
+                            <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Task Title</label>
+                    <input type="text" name="task_title" id="assign-task-title" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="e.g. Update client presentation">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description (Optional)</label>
+                    <textarea name="description" id="assign-task-desc" rows="3" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Additional details..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeAssignTaskModal()" class="px-5 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition">Cancel</button>
+                    <button type="submit" id="assign-task-btn" class="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition flex items-center gap-2">
+                        Assign Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Comments Modal --}}
+<div id="comments-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 sm:p-6">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeCommentsModal()"></div>
+    
+    <div class="relative w-full max-w-2xl bg-white shadow-2xl rounded-2xl overflow-hidden flex flex-col h-[650px] max-h-[90vh] border border-slate-200/60 transform transition-all">
+        <!-- Header -->
+        <div class="bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 shadow-sm z-10">
+            <div class="flex items-center gap-3 w-full overflow-hidden">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                </div>
+                <div class="min-w-0 flex-1 pr-4">
+                    <h3 class="text-base font-bold text-slate-800 truncate" id="comments-modal-title">Task Discussion</h3>
+                    <p class="text-xs font-semibold text-slate-500 truncate mt-0.5" id="comments-task-name"></p>
+                </div>
+            </div>
+            <button type="button" onclick="closeCommentsModal()" class="text-slate-400 hover:text-slate-600 transition bg-slate-50 hover:bg-slate-100 p-2 rounded-full shrink-0">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        
+        <!-- Chat Body -->
+        <div id="comments-list" class="flex-1 overflow-y-auto p-5 sm:p-7 bg-[#f8f9fa] space-y-2 custom-scrollbar relative">
+            <!-- Comments injected via JS -->
+            <div class="flex h-full items-center justify-center">
+                <div class="flex items-center gap-2 text-slate-500 text-sm font-medium">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Loading discussion...
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-white border-t border-slate-100 p-4 sm:px-6 shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+            <form id="comment-form" onsubmit="submitComment(event)" class="relative flex items-end gap-3">
+                <input type="hidden" id="comment-task-id">
+                <div class="relative flex-1">
+                    <textarea id="comment-input" rows="1" required placeholder="Type your message..." 
+                              oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 120) + 'px'"
+                              class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl pl-4 pr-10 py-3.5 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition resize-none custom-scrollbar shadow-inner" style="min-height: 48px; max-height: 120px;"></textarea>
+                </div>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl p-3.5 shadow-md hover:shadow-lg transition shrink-0 self-end disabled:opacity-50 disabled:cursor-not-allowed group">
+                    <svg class="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -593,6 +680,177 @@
 
     function closeHistoryModal() {
         document.getElementById('history-modal').classList.add('hidden');
+    }
+
+    // Assign Task Logic
+    function openAssignTaskModal() {
+        document.getElementById('assign-task-form').reset();
+        document.getElementById('assign-task-modal').classList.remove('hidden');
+    }
+
+    function closeAssignTaskModal() {
+        document.getElementById('assign-task-modal').classList.add('hidden');
+    }
+
+    function submitAssignTask(e) {
+        e.preventDefault();
+        const btn = document.getElementById('assign-task-btn');
+        btn.disabled = true;
+        btn.innerHTML = 'Assigning...';
+
+        const formData = new FormData(e.target);
+        
+        fetch('{{ route("daily-report.assign-task") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                alert('Task assigned successfully!');
+                location.reload();
+            } else {
+                alert(data.message || 'Error assigning task.');
+                btn.disabled = false;
+                btn.innerHTML = 'Assign Task';
+            }
+        }).catch(err => {
+            alert('Network error.');
+            btn.disabled = false;
+            btn.innerHTML = 'Assign Task';
+        });
+    }
+
+    // Comments Logic
+    function openCommentsModal(taskId) {
+        document.getElementById('comment-task-id').value = taskId;
+        document.getElementById('comments-list').innerHTML = '<div class="text-center text-slate-400 text-xs py-4">Loading comments...</div>';
+        document.getElementById('comments-modal-title').textContent = 'Loading...';
+        document.getElementById('comments-task-name').textContent = '';
+        document.getElementById('comments-modal').classList.remove('hidden');
+
+        fetch(`{{ url("daily-report/task") }}/${taskId}/comments`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                document.getElementById('comments-modal-title').textContent = 'Task Discussion';
+                document.getElementById('comments-task-name').textContent = data.task_title + ' (' + data.staff_name + ')';
+                renderComments(data.comments);
+            } else {
+                alert(data.message || 'Error loading comments');
+                closeCommentsModal();
+            }
+        }).catch(err => {
+            alert('Network error.');
+            closeCommentsModal();
+        });
+    }
+
+    function closeCommentsModal() {
+        document.getElementById('comments-modal').classList.add('hidden');
+    }
+
+    function renderComments(comments) {
+        const list = document.getElementById('comments-list');
+        list.innerHTML = '';
+        
+        // Add Activity Stream Header
+        const headerHtml = `
+            <div class="mb-6 border-b border-slate-200/60 pb-2">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Activity Stream</span>
+            </div>
+        `;
+        list.innerHTML = headerHtml;
+
+        if(comments.length === 0) {
+            list.innerHTML += `
+                <div class="flex flex-col items-center justify-center text-center px-4 py-10">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100">
+                        <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-600">No activity yet</p>
+                    <p class="text-xs text-slate-400 mt-1">Start the conversation by typing below.</p>
+                </div>
+            `;
+            return;
+        }
+
+        comments.forEach(c => {
+            const isOwn = c.is_own;
+            const alignClass = isOwn ? 'flex-row-reverse' : 'flex-row';
+            const bubbleBg = isOwn ? 'bg-[#5a45ff] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-700 shadow-sm';
+            const borderRadius = isOwn ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl rounded-tl-md';
+            const nameAlign = isOwn ? 'justify-end' : 'justify-start';
+            
+            // Trim the comment to avoid huge blank spaces
+            const trimmedComment = c.comment ? c.comment.trim() : '';
+            const firstLetter = c.user_name ? c.user_name.charAt(0).toUpperCase() : '?';
+
+            // Custom logic for avatar background based on isOwn
+            const actualAvatarBg = isOwn ? 'bg-[#5a45ff]' : 'bg-[#101828]';
+
+            list.innerHTML += `
+                <div class="flex ${alignClass} items-start gap-3 mb-6 w-full">
+                    <!-- Avatar -->
+                    <div class="w-9 h-9 ${actualAvatarBg} text-white flex items-center justify-center font-bold text-sm rounded-[10px] shrink-0 shadow-sm mt-1">
+                        ${firstLetter}
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="flex flex-col max-w-[85%] sm:max-w-[75%]">
+                        <!-- Header (Name & Time) -->
+                        <div class="flex items-baseline gap-2 mb-1.5 ${nameAlign}">
+                            <span class="text-[11px] font-bold text-slate-800 uppercase tracking-widest">${c.user_name}</span>
+                            <span class="text-[10px] font-semibold text-slate-400">${c.created_at}</span>
+                        </div>
+                        
+                        <!-- Message Box -->
+                        <div class="${bubbleBg} ${borderRadius} p-4 sm:p-5 text-[13px] leading-relaxed relative flex flex-col w-fit ${isOwn ? 'ml-auto' : 'mr-auto'}">
+                            <span class="whitespace-pre-wrap break-words" style="min-width: 0;">${trimmedComment}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        setTimeout(() => {
+            list.scrollTop = list.scrollHeight;
+        }, 10);
+    }
+
+    function submitComment(e) {
+        e.preventDefault();
+        const taskId = document.getElementById('comment-task-id').value;
+        const comment = document.getElementById('comment-input').value;
+        if(!comment.trim()) return;
+
+        const btn = e.target.querySelector('button');
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        formData.append('comment', comment);
+
+        fetch(`{{ url("daily-report/task") }}/${taskId}/comments`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                document.getElementById('comment-input').value = '';
+                // Just reload all comments to ensure order, or just append the single comment
+                // For simplicity, we just fetch again
+                openCommentsModal(taskId);
+            } else {
+                alert(data.message || 'Error posting comment');
+            }
+            btn.disabled = false;
+        }).catch(err => {
+            alert('Network error.');
+            btn.disabled = false;
+        });
     }
 </script>
 @endpush

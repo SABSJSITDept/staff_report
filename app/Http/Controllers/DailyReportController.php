@@ -22,7 +22,9 @@ class DailyReportController extends Controller
     {
         self::autoPauseMidnightTasks(Auth::id());
 
-        $query = DailyReport::with(['staff', 'tasks'])
+        $query = DailyReport::with(['staff', 'tasks' => function($q) {
+            $q->withCount('comments');
+        }])
             ->orderByDesc('report_date')
             ->orderByDesc('created_at');
 
@@ -31,7 +33,7 @@ class DailyReportController extends Controller
             $query->where('staff_id', Auth::id());
         }
 
-        $reports = $query->get();
+        $reports = $query->paginate(5);
 
         // Statistics for dashboard
         $statsQuery = DailyReport::query();
@@ -498,6 +500,52 @@ class DailyReportController extends Controller
         return response()->json(['success' => true, 'message' => 'Task completed successfully', 'task' => $task]);
     }
 
+    public function assignTask(Request $request)
+    {
+        if (!in_array(Auth::user()->role, ['admin', 'manager'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'staff_id' => 'required|exists:users,id',
+            'task_title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $staffId = $request->staff_id;
+        
+        if (Auth::user()->role === 'manager') {
+            $staffUser = User::with('staff')->find($staffId);
+            if (!$staffUser || !$staffUser->staff || $staffUser->staff->office_id !== Auth::user()->staff->office_id) {
+                return response()->json(['success' => false, 'message' => 'Staff not found or not in your office'], 403);
+            }
+        }
+
+        $today = now()->toDateString();
+        $report = DailyReport::firstOrCreate(
+            ['staff_id' => $staffId, 'report_date' => $today],
+            ['pending_task' => 'Assigned Task Tracking', 'planned_task' => 'Assigned Task Tracking']
+        );
+
+        $task = $report->tasks()->create([
+            'task_title' => $request->task_title,
+            'description' => $request->description,
+            'status' => 'paused',
+            'assigned_by' => Auth::id()
+        ]);
+        
+        \App\Models\Notification::create([
+            'user_id' => $staffId,
+            'title' => 'New Task Assigned',
+            'message' => Auth::user()->name . " assigned a new task: '{$task->task_title}'",
+            'url' => route('staff.track-task'),
+            'type' => 'info',
+            'is_read' => false
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Task assigned successfully to the staff.', 'task' => $task]);
+    }
+
     public static function autoCarryForwardPaused($staffId)
     {
         $today = now()->toDateString();
@@ -753,19 +801,41 @@ class DailyReportController extends Controller
             });
         }
 
-        $allStaff = $query->orderBy('name', 'asc')->get();
+        // To calculate overall stats:
+        $allStaffIds = (clone $query)->pluck('id');
+        $totalStaffCount = $allStaffIds->count();
 
         // Fetch today's tasks grouped by staff_id (both live and completed)
         $todayTasks = DailyReportTask::whereHas('dailyReport', function($q) {
                 $q->whereDate('report_date', now()->toDateString());
             })
             ->with('dailyReport')
+            ->withCount('comments')
             ->get()
             ->groupBy(function($item) {
                 return $item->dailyReport->staff_id;
             });
 
-        return view('DailyReport.LiveTasks', compact('allStaff', 'todayTasks'));
+        $liveCount = 0;
+        $pausedCount = 0;
+        $completedStaffCount = 0;
+
+        foreach ($allStaffIds as $staffId) {
+            $tasks = $todayTasks->get($staffId) ?? collect();
+            if ($tasks->where('status', 'in_progress')->isNotEmpty()) {
+                $liveCount++;
+            } elseif ($tasks->where('status', 'paused')->isNotEmpty()) {
+                $pausedCount++;
+            } elseif ($tasks->where('status', 'completed')->isNotEmpty()) {
+                $completedStaffCount++;
+            }
+        }
+        $idleCount = $totalStaffCount - ($liveCount + $pausedCount + $completedStaffCount);
+
+        $staffListForDropdown = (clone $query)->orderBy('name', 'asc')->get();
+        $allStaff = $query->orderBy('name', 'asc')->paginate(5);
+
+        return view('DailyReport.LiveTasks', compact('allStaff', 'staffListForDropdown', 'todayTasks', 'totalStaffCount', 'liveCount', 'pausedCount', 'idleCount'));
     }
 
     public static function autoPauseMidnightTasks($userId = null)

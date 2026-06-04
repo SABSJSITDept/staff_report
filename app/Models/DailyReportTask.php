@@ -11,6 +11,7 @@ class DailyReportTask extends Model
 
     protected $fillable = [
         'daily_report_id',
+        'assigned_by',
         'source_task_id',
         'task_title',
         'description',
@@ -30,5 +31,15 @@ class DailyReportTask extends Model
     public function dailyReport()
     {
         return $this->belongsTo(DailyReport::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(TaskComment::class, 'daily_report_task_id')->orderBy('created_at', 'asc');
+    }
+
+    public function assignedBy()
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
     }
 }

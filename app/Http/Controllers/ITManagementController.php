@@ -164,4 +164,53 @@ class ITManagementController extends Controller
         // Sort by most missed days first
         return $defaulters->sortByDesc('consecutive_missed')->values();
     }
+
+    public function sendDefaulterMail($id)
+    {
+        $staff = StaffModel::findOrFail($id);
+
+        if ($staff->email) {
+            \Illuminate\Support\Facades\Mail::to($staff->email)->send(new \App\Mail\BackupDefaulterMail($staff));
+            
+            \App\Models\BackupDefaulterMailLog::create([
+                'staff_id' => $staff->id,
+                'sent_by' => auth()->id()
+            ]);
+
+            return back()->with('success', 'Mail sent successfully to ' . $staff->name);
+        }
+
+        return back()->with('error', 'No email address found for ' . $staff->name);
+    }
+
+    public function sendBulkDefaulterMail(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'staff_ids' => 'required|array',
+            'staff_ids.*' => 'exists:staff_details,id'
+        ]);
+
+        $staffs = StaffModel::whereIn('id', $request->staff_ids)->get();
+        $sentCount = 0;
+
+        foreach ($staffs as $staff) {
+            if ($staff->email) {
+                \Illuminate\Support\Facades\Mail::to($staff->email)->send(new \App\Mail\BackupDefaulterMail($staff));
+                
+                \App\Models\BackupDefaulterMailLog::create([
+                    'staff_id' => $staff->id,
+                    'sent_by' => auth()->id()
+                ]);
+                $sentCount++;
+            }
+        }
+
+        return back()->with('success', "Mail sent successfully to $sentCount staff members.");
+    }
+
+    public function defaulterMailLogsIndex()
+    {
+        $logs = \App\Models\BackupDefaulterMailLog::with(['staff', 'sender'])->latest()->paginate(20);
+        return view('ITManagement.backup-mail-logs', compact('logs'));
+    }
 }

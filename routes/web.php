@@ -93,6 +93,9 @@ Route::middleware(['auth', 'role:IT DEPARTMENT'])->prefix('it-management')->name
     Route::get('/backup-reports/export/excel', [\App\Http\Controllers\ITManagementController::class, 'backupReportsExportExcel'])->name('backup-reports.export-excel');
 
     Route::get('/backup-defaulters', [\App\Http\Controllers\ITManagementController::class, 'defaultersIndex'])->name('backup-defaulters.index');
+    Route::post('/backup-defaulters/{id}/send-mail', [\App\Http\Controllers\ITManagementController::class, 'sendDefaulterMail'])->name('backup-defaulters.send-mail');
+    Route::post('/backup-defaulters/send-bulk-mail', [\App\Http\Controllers\ITManagementController::class, 'sendBulkDefaulterMail'])->name('backup-defaulters.send-bulk-mail');
+    Route::get('/backup-defaulters/mail-logs', [\App\Http\Controllers\ITManagementController::class, 'defaulterMailLogsIndex'])->name('backup-defaulters.mail-logs');
     Route::get('/backup-defaulters/export/pdf', [\App\Http\Controllers\ITManagementController::class, 'defaultersExportPdf'])->name('backup-defaulters.export-pdf');
     Route::get('/backup-defaulters/export/excel', [\App\Http\Controllers\ITManagementController::class, 'defaultersExportExcel'])->name('backup-defaulters.export-excel');
 });
@@ -133,6 +136,10 @@ Route::middleware('auth')->prefix('daily-report')->name('daily-report.')->group(
     Route::get('/task/{task}/export/{format}', [DailyReportController::class, 'exportTaskReport'])->name('task.export');
     
     Route::get('/export',    [DailyReportController::class, 'export'])->name('export');
+
+    Route::post('/assign-task', [DailyReportController::class, 'assignTask'])->name('assign-task');
+    Route::get('/task/{task}/comments', [\App\Http\Controllers\TaskCommentController::class, 'index'])->name('task.comments.index');
+    Route::post('/task/{task}/comments', [\App\Http\Controllers\TaskCommentController::class, 'store'])->name('task.comments.store');
 
     Route::post('/',        [DailyReportController::class, 'store'])->name('store');
     Route::get('/{dailyReport}',        [DailyReportController::class, 'show'])->name('show');
