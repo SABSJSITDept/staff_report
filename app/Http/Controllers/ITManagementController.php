@@ -208,9 +208,22 @@ class ITManagementController extends Controller
         return back()->with('success', "Mail sent successfully to $sentCount staff members.");
     }
 
-    public function defaulterMailLogsIndex()
+    public function defaulterMailLogsIndex(\Illuminate\Http\Request $request)
     {
-        $logs = \App\Models\BackupDefaulterMailLog::with(['staff', 'sender'])->latest()->paginate(20);
-        return view('ITManagement.backup-mail-logs', compact('logs'));
+        $query = \App\Models\BackupDefaulterMailLog::with(['staff', 'sender'])->latest();
+
+        if ($request->filled('staff_id')) {
+            $query->where('staff_id', $request->staff_id);
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        $totalCount = $query->count();
+        $logs = $query->paginate(20)->withQueryString();
+        $staffList = \App\Models\Staff\StaffModel::orderBy('name')->get();
+
+        return view('ITManagement.backup-mail-logs', compact('logs', 'totalCount', 'staffList'));
     }
 }
