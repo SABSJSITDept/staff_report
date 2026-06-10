@@ -22,7 +22,19 @@ class TaskCommentController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $sessions = $task->sessions;
+        $taskIds = [];
+        $curr = $task;
+        $depth = 0;
+        while ($curr && $depth < 50) {
+            $taskIds[] = $curr->id;
+            if (!$curr->source_task_id || in_array($curr->source_task_id, $taskIds)) {
+                break;
+            }
+            $curr = \App\Models\DailyReportTask::find($curr->source_task_id);
+            $depth++;
+        }
+
+        $sessions = \App\Models\DailyReportTaskSession::whereIn('daily_report_task_id', $taskIds)->get();
         $systemEvents = collect();
 
         foreach ($sessions as $session) {
@@ -52,7 +64,7 @@ class TaskCommentController extends Controller
             }
         }
 
-        $comments = $task->comments()->with('user')->get()->map(function ($c) {
+        $comments = \App\Models\TaskComment::with('user')->whereIn('daily_report_task_id', $taskIds)->get()->map(function ($c) {
             return [
                 'id' => $c->id,
                 'user_name' => $c->user->name ?? 'Unknown',
@@ -98,7 +110,7 @@ class TaskCommentController extends Controller
         $notifyUserIds = [];
         $url = '';
         if ($user->role === 'staff') {
-            $url = route('daily-report.index'); // Admin/Manager views daily reports
+            $url = route('daily-report.index') . '?open_comment=' . $task->id; // Admin/Manager views daily reports
             
             // Notify the person who assigned it
             if ($task->assigned_by) {
@@ -125,7 +137,7 @@ class TaskCommentController extends Controller
         } else {
             // Admin/Manager commented, notify staff
             $notifyUserIds[] = $task->dailyReport->staff_id;
-            $url = route('staff.track-task'); // Staff views track task
+            $url = route('staff.track-task') . '?open_comment=' . $task->id; // Staff views track task
         }
 
         $notifyUserIds = array_unique($notifyUserIds);

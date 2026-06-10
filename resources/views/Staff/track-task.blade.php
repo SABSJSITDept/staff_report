@@ -916,5 +916,17 @@
             btn.disabled = false;
         });
     }
+    // Auto-open comments modal if URL has open_comment parameter
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openCommentTaskId = urlParams.get('open_comment');
+        if (openCommentTaskId && typeof openCommentsModal === 'function') {
+            setTimeout(() => {
+                openCommentsModal(openCommentTaskId);
+                const newUrl = window.location.pathname + window.location.search.replace(new RegExp('[\?&]open_comment=[^&]+'), '').replace(/^&/, '?');
+                window.history.replaceState({}, document.title, newUrl);
+            }, 300);
+        }
+    });
 </script>
 @endpush
