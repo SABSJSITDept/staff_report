@@ -22,22 +22,59 @@ class TaskCommentController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        $sessions = $task->sessions;
+        $systemEvents = collect();
+
+        foreach ($sessions as $session) {
+            if ($session->start_time) {
+                $systemEvents->push([
+                    'id' => 's_start_' . $session->id,
+                    'user_name' => 'System',
+                    'user_role' => 'system',
+                    'comment' => '▶ Task Started / Resumed',
+                    'created_at_raw' => $session->start_time,
+                    'created_at' => $session->start_time->format('d M Y, h:i A'),
+                    'is_own' => false,
+                    'is_system' => true
+                ]);
+            }
+            if ($session->end_time) {
+                $systemEvents->push([
+                    'id' => 's_end_' . $session->id,
+                    'user_name' => 'System',
+                    'user_role' => 'system',
+                    'comment' => '⏸ Task Paused / Completed',
+                    'created_at_raw' => $session->end_time,
+                    'created_at' => $session->end_time->format('d M Y, h:i A'),
+                    'is_own' => false,
+                    'is_system' => true
+                ]);
+            }
+        }
+
         $comments = $task->comments()->with('user')->get()->map(function ($c) {
             return [
                 'id' => $c->id,
                 'user_name' => $c->user->name ?? 'Unknown',
                 'user_role' => $c->user->role ?? 'staff',
                 'comment' => $c->comment,
+                'created_at_raw' => $c->created_at,
                 'created_at' => $c->created_at->format('d M Y, h:i A'),
-                'is_own' => $c->user_id === Auth::id()
+                'is_own' => $c->user_id === Auth::id(),
+                'is_system' => false
             ];
+        });
+
+        $allActivity = $comments->concat($systemEvents)->sortBy('created_at_raw')->values()->map(function ($item) {
+            unset($item['created_at_raw']);
+            return $item;
         });
 
         return response()->json([
             'success' => true,
             'task_title' => $task->task_title,
             'staff_name' => $task->dailyReport->staff->name ?? 'Staff',
-            'comments' => $comments
+            'comments' => $allActivity
         ]);
     }
 

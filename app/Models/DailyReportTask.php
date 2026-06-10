@@ -42,4 +42,9 @@ class DailyReportTask extends Model
     {
         return $this->belongsTo(User::class, 'assigned_by');
     }
+
+    public function sessions()
+    {
+        return $this->hasMany(DailyReportTaskSession::class, 'daily_report_task_id')->orderBy('start_time', 'asc');
+    }
 }

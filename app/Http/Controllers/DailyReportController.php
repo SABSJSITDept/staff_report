@@ -23,7 +23,7 @@ class DailyReportController extends Controller
         self::autoPauseMidnightTasks(Auth::id());
 
         $query = DailyReport::with(['staff', 'tasks' => function($q) {
-            $q->withCount('comments');
+            $q->withCount('comments')->with('sessions');
         }])
             ->orderByDesc('report_date')
             ->orderByDesc('created_at');
@@ -243,7 +243,7 @@ class DailyReportController extends Controller
         if (Auth::user()->role === 'staff' && $dailyReport->staff_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $dailyReport->load(['staff', 'tasks']);
+        $dailyReport->load(['staff', 'tasks.sessions']);
 
         return response()->json([
             'id'           => $dailyReport->id,
@@ -267,6 +267,10 @@ class DailyReportController extends Controller
                 'time_spend'    => $t->time_spend,
                 'start_time'    => $t->start_time,
                 'end_time'      => $t->end_time,
+                'sessions'      => $t->sessions->map(fn($s) => [
+                    'start_time' => $s->start_time ? $s->start_time->format('H:i') : null,
+                    'end_time'   => $s->end_time ? $s->end_time->format('H:i') : null,
+                ])->toArray(),
             ])->values()->toArray(),
         ]);
     }
@@ -408,7 +412,7 @@ class DailyReportController extends Controller
             'tasks' => $incompleteTasks->map(fn($t) => [
                 'source_task_id'=> $t->id,
                 'task_title'    => $t->task_title,
-                'description'   => $t->description,
+                'description'   => null,
                 'status'        => $t->status,
                 'is_carry'      => true,
                 'previous_time' => $this->sumTimeStrings($t->previous_time, $t->time_spend),
@@ -469,6 +473,10 @@ class DailyReportController extends Controller
             'start_time' => now(),
         ]);
 
+        $task->sessions()->create([
+            'start_time' => now(),
+        ]);
+
         return response()->json(['success' => true, 'message' => 'Task started successfully', 'task' => $task]);
     }
 
@@ -512,6 +520,11 @@ class DailyReportController extends Controller
             'end_time' => $endTime,
             'time_spend' => trim($timeSpend)
         ]);
+
+        $session = $task->sessions()->whereNull('end_time')->latest()->first();
+        if ($session) {
+            $session->update(['end_time' => $endTime]);
+        }
 
         return response()->json(['success' => true, 'message' => 'Task completed successfully', 'task' => $task]);
     }
@@ -604,7 +617,7 @@ class DailyReportController extends Controller
                 $todayReport->tasks()->create([
                     'source_task_id' => $pTask->id,
                     'task_title' => $pTask->task_title,
-                    'description' => $pTask->description,
+                    'description' => null,
                     'status' => 'paused', // carry forward as paused
                     'is_carry' => true,
                     'previous_time' => $accumulatedTime,
@@ -705,6 +718,11 @@ class DailyReportController extends Controller
             'end_time' => null, // Just paused, not finished
         ]);
 
+        $session = $task->sessions()->whereNull('end_time')->latest()->first();
+        if ($session) {
+            $session->update(['end_time' => $endTime]);
+        }
+
         return response()->json(['success' => true, 'message' => 'Task paused successfully', 'task' => $task]);
     }
 
@@ -732,6 +750,10 @@ class DailyReportController extends Controller
 
         $task->update([
             'status' => 'in_progress',
+            'start_time' => now(),
+        ]);
+
+        $task->sessions()->create([
             'start_time' => now(),
         ]);
 

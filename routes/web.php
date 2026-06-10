@@ -15,6 +15,8 @@ Route::get('/home', [LoginController::class, 'showLoginForm'])->middleware('auth
 // Keep-alive route
 Route::get('/keep-alive', fn() => response()->json(['status' => 'alive']));
 
+
+
 // Auth routes (guests only)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

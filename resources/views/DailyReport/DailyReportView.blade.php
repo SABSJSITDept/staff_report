@@ -322,7 +322,19 @@
                                     
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex flex-col items-center gap-1.5 justify-center">
-                                            @if($task->start_time && $task->end_time)
+                                            @if($task->sessions && $task->sessions->count() > 0)
+                                                @foreach($task->sessions as $session)
+                                                    @if($session->start_time && $session->end_time)
+                                                        <div class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 whitespace-nowrap">
+                                                            {{ \Carbon\Carbon::parse($session->start_time)->format('h:i A') }} — {{ \Carbon\Carbon::parse($session->end_time)->format('h:i A') }}
+                                                        </div>
+                                                    @elseif($session->start_time)
+                                                        <div class="text-[10px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100/50 animate-pulse whitespace-nowrap">
+                                                            Started: {{ \Carbon\Carbon::parse($session->start_time)->format('h:i A') }}
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            @elseif($task->start_time && $task->end_time)
                                                 <div class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 whitespace-nowrap">
                                                     {{ \Carbon\Carbon::parse($task->start_time)->format('h:i A') }} — {{ \Carbon\Carbon::parse($task->end_time)->format('h:i A') }}
                                                 </div>
@@ -587,12 +599,22 @@
                         ${t.description ? `<p class="text-xs text-gray-500 mt-1.5 leading-relaxed whitespace-pre-wrap">${esc(t.description)}</p>` : ''}
                         
                         <div class="flex items-center gap-3 mt-2 flex-wrap">
-                            ${durationStr ? `
+                            ${t.sessions && t.sessions.length > 0 ? t.sessions.map(s => {
+                                const stStr = formatTime(s.start_time);
+                                const etStr = formatTime(s.end_time);
+                                const dStr = stStr && etStr ? `${stStr} — ${etStr}` : (stStr ? `Started: ${stStr}` : '');
+                                return dStr ? `
+                                    <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
+                                        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="text-[10px] font-semibold">${dStr}</span>
+                                    </div>
+                                ` : '';
+                            }).join('') : (durationStr ? `
                                 <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">
                                     <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     <span class="text-[10px] font-semibold">${durationStr}</span>
                                 </div>
-                            ` : ''}
+                            ` : '')}
                             ${t.is_carry && t.previous_time ? `
                                 <div class="flex items-center gap-1">
                                     <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -800,6 +822,17 @@
         }
 
         comments.forEach(c => {
+            if (c.is_system) {
+                list.innerHTML += `
+                    <div class="flex flex-row items-center gap-3 mb-4 w-full">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300 ml-4 shrink-0"></div>
+                        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60 shadow-sm">${c.comment}</span>
+                        <span class="text-[10px] text-slate-400 font-medium ml-2">${c.created_at}</span>
+                    </div>
+                `;
+                return;
+            }
+
             const isOwn = c.is_own;
             const alignClass = isOwn ? 'flex-row-reverse' : 'flex-row';
             const bubbleBg = isOwn ? 'bg-[#5a45ff] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-700 shadow-sm';

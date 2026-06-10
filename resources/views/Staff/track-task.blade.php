@@ -833,6 +833,17 @@
         }
 
         comments.forEach(c => {
+            if (c.is_system) {
+                list.innerHTML += `
+                    <div class="flex flex-row items-center gap-3 mb-4 w-full">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300 ml-4 shrink-0"></div>
+                        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/60 shadow-sm">${c.comment}</span>
+                        <span class="text-[10px] text-slate-400 font-medium ml-2">${c.created_at}</span>
+                    </div>
+                `;
+                return;
+            }
+
             const isOwn = c.is_own;
             const alignClass = isOwn ? 'flex-row-reverse' : 'flex-row';
             const bubbleBg = isOwn ? 'bg-[#5a45ff] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-700 shadow-sm';
