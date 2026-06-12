@@ -22,7 +22,7 @@
             </div>
             <select id="staffSearch" class="block w-full pl-10 pr-10 py-2 border border-slate-200/80 rounded-2xl bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 text-sm shadow-xs transition appearance-none cursor-pointer">
                 <option value="" data-office="">All Staff Members</option>
-                @foreach($allStaff as $staff)
+                @foreach($staffListForDropdown as $staff)
                     <option value="{{ strtolower($staff->name) }}" data-office="{{ $staff->staff?->office_id }}">{{ $staff->name }}</option>
                 @endforeach
             </select>
@@ -36,7 +36,7 @@
         <!-- Office Filter Dropdown for Admin Only -->
         @if(Auth::user()->role === 'admin')
             @php
-                $offices = $allStaff->map(fn($s) => $s->staff?->office)->filter()->unique('id');
+                $offices = $staffListForDropdown->map(fn($s) => $s->staff?->office)->filter()->unique('id');
             @endphp
             <div class="relative flex-1 md:w-56">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none z-10">
