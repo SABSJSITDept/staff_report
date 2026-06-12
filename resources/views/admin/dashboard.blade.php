@@ -2,9 +2,18 @@
 @section('title', 'Admin Dashboard')
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">Admin Dashboard</h2>
-    <p class="text-gray-500 text-sm mt-1">All Control Panel.</p>
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">Admin Dashboard</h2>
+        <p class="text-gray-500 text-sm mt-1">All Control Panel.</p>
+    </div>
+    <form action="{{ route('admin.logout-all-staff') }}" method="POST" onsubmit="return confirm('Kya aap sach me sabhi staff ko ek sath logout karna chahte hain?');">
+        @csrf
+        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Logout All Staff
+        </button>
+    </form>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
