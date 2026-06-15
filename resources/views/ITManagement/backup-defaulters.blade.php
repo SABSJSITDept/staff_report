@@ -232,17 +232,21 @@
         document.getElementById('bulk-mail-icon').classList.add('hidden');
         document.getElementById('bulk-spin-icon').classList.remove('hidden');
         document.getElementById('bulk-send-text').textContent = 'Sending...';
-        btn.disabled = true;
+        setTimeout(() => {
+            btn.disabled = true;
+        }, 50);
     }
 
     function handleSingleSend(e, btn, staffName) {
         // Show overlay
         showSendingOverlay();
         // Update clicked button
-        btn.disabled = true;
         btn.querySelector('.send-icon').classList.add('hidden');
         btn.classList.add('opacity-75');
         btn.querySelector('.btn-label').textContent = 'Sending...';
+        setTimeout(() => {
+            btn.disabled = true;
+        }, 50);
     }
 </script>
 @endsection
