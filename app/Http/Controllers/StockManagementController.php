@@ -217,6 +217,27 @@ class StockManagementController extends Controller
         return view('StockManagement.allotment-history', compact('staffsWithAllotments'));
     }
 
+    public function allotmentExportPdf()
+    {
+        $user = auth()->user();
+        $query = StaffModel::whereHas('stockAllotments')
+            ->with(['stockAllotments.brand.item.category', 'office']);
+            
+        if (!$user->isAdmin() && $user->staff) {
+            $query->where('office_id', $user->staff->office_id);
+        }
+        
+        $staffs = $query->get();
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('StockManagement.exports.allotments-pdf', compact('staffs'));
+        return $pdf->download('staff_allotment_report_' . date('Y-m-d') . '.pdf');
+    }
+
+    public function allotmentExportExcel()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\StaffAllotmentExport, 'staff_allotment_report_' . date('Y-m-d') . '.xlsx');
+    }
+
     public function allotmentStore(Request $request)
     {
         $request->validate([

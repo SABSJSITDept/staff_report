@@ -142,6 +142,8 @@ Route::middleware(['auth', 'role:IT DEPARTMENT'])->prefix('stock-management')->n
     Route::get('/allotments', [\App\Http\Controllers\StockManagementController::class, 'allotmentIndex'])->name('allotments.index');
     Route::post('/allotments', [\App\Http\Controllers\StockManagementController::class, 'allotmentStore'])->name('allotments.store');
     Route::get('/allotments/history', [\App\Http\Controllers\StockManagementController::class, 'allotmentHistoryIndex'])->name('allotments.history');
+    Route::get('/allotments/export/pdf', [\App\Http\Controllers\StockManagementController::class, 'allotmentExportPdf'])->name('allotments.export-pdf');
+    Route::get('/allotments/export/excel', [\App\Http\Controllers\StockManagementController::class, 'allotmentExportExcel'])->name('allotments.export-excel');
     Route::post('/allotments/{id}/return', [\App\Http\Controllers\StockManagementController::class, 'allotmentReturn'])->name('allotments.return');
     Route::put('/allotments/{id}', [\App\Http\Controllers\StockManagementController::class, 'allotmentUpdate'])->name('allotments.update');
     Route::delete('/allotments/{id}', [\App\Http\Controllers\StockManagementController::class, 'allotmentDestroy'])->name('allotments.destroy');
