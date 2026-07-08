@@ -28,9 +28,41 @@ class DailyReportController extends Controller
             ->orderByDesc('report_date')
             ->orderByDesc('created_at');
 
-        // Staff sirf apni khud ki reports dekh sakta hai
-        if (Auth::user()->role === 'staff') {
-            $query->where('staff_id', Auth::id());
+        $user = Auth::user();
+        $isHod = $user->role === 'staff' && $user->staff && $user->staff->isHod();
+
+        // Staff sirf apni khud ki reports dekh sakta hai, unless HOD
+        if ($user->role === 'staff') {
+            if ($isHod) {
+                $deptId = $user->staff->managedDepartment->id;
+                $deptStaffUserIds = \App\Models\Staff\StaffModel::where('dept_id', $deptId)->pluck('user_id')->filter()->toArray();
+                $deptStaffUserIds[] = $user->id; // Own reports
+                $query->whereIn('staff_id', array_unique($deptStaffUserIds));
+
+                if (request()->filled('staff_id')) {
+                    $query->where('staff_id', request('staff_id'));
+                }
+            } else {
+                $query->where('staff_id', $user->id);
+            }
+        } elseif ($user->role === 'sanyojak') {
+            $sanyojak = Auth::user()->sanyojak;
+            $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
+            $query->whereIn('staff_id', $assignedUserIds ?: [0]); // 0 to avoid empty in clause returning everything
+            
+            if (request()->filled('staff_id')) {
+                $query->where('staff_id', request('staff_id'));
+            }
+        } elseif ($user->role === 'karyalay_sanyojak') {
+            if (request()->filled('staff_id')) {
+                $query->where('staff_id', request('staff_id'));
+            }
+            if (request()->filled('office_id')) {
+                $query->whereHas('staff.staff', function ($q) {
+                    $q->where('office_id', request('office_id'));
+                });
+            }
         } else {
             if (request()->filled('staff_id')) {
                 $query->where('staff_id', request('staff_id'));
@@ -53,8 +85,22 @@ class DailyReportController extends Controller
 
         // Statistics for dashboard
         $statsQuery = DailyReport::query();
-        if (Auth::user()->role === 'staff') {
-            $statsQuery->where('staff_id', Auth::id());
+        if ($user->role === 'staff') {
+            if ($isHod) {
+                $deptId = $user->staff->managedDepartment->id;
+                $deptStaffUserIds = \App\Models\Staff\StaffModel::where('dept_id', $deptId)->pluck('user_id')->filter()->toArray();
+                $deptStaffUserIds[] = $user->id;
+                $statsQuery->whereIn('staff_id', array_unique($deptStaffUserIds));
+            } else {
+                $statsQuery->where('staff_id', $user->id);
+            }
+        } elseif ($user->role === 'sanyojak') {
+            $sanyojak = Auth::user()->sanyojak;
+            $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
+            $statsQuery->whereIn('staff_id', $assignedUserIds ?: [0]);
+        } elseif ($user->role === 'karyalay_sanyojak') {
+            // Can see all stats
         }
 
         $totalReports = (clone $statsQuery)->count();
@@ -66,14 +112,28 @@ class DailyReportController extends Controller
         
         $completionRate = $totalTasks > 0 ? round(($doneTasks / $totalTasks) * 100) : 0;
 
-        // Fetch staff for dropdown (Admin/Manager only)
+        // Fetch staff for dropdown (Admin/Manager/HOD only)
         $allStaff = [];
         $offices = [];
-        if (Auth::user()->role !== 'staff') {
-            $allStaff = User::with('staff.office')
-                ->whereIn('role', ['staff', 'manager', 'admin'])
-                ->orderBy('name')
-                ->get();
+        if ($user->role !== 'staff' || $isHod) {
+            $staffQuery = User::with('staff.office')
+                ->whereIn('role', ['staff', 'manager', 'admin']);
+                
+            if ($user->role === 'sanyojak') {
+                $sanyojak = Auth::user()->sanyojak;
+                $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
+                $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
+                $staffQuery->whereIn('id', $assignedUserIds ?: [0]);
+            } elseif ($user->role === 'karyalay_sanyojak') {
+                // Gets all staff
+            } elseif ($isHod) {
+                $deptId = $user->staff->managedDepartment->id;
+                $deptStaffUserIds = \App\Models\Staff\StaffModel::where('dept_id', $deptId)->pluck('user_id')->filter()->toArray();
+                $deptStaffUserIds[] = $user->id;
+                $staffQuery->whereIn('id', array_unique($deptStaffUserIds));
+            }
+            
+            $allStaff = $staffQuery->orderBy('name')->get();
             $offices = \App\Models\Office\OfficeModel::orderBy('name')->get();
         }
 
@@ -98,8 +158,33 @@ class DailyReportController extends Controller
         $query = DailyReport::with(['staff', 'tasks'])
             ->orderBy('report_date');
 
-        if (Auth::user()->role === 'staff') {
-            $query->where('staff_id', Auth::id());
+        $user = Auth::user();
+        $isHod = $user->role === 'staff' && $user->staff && $user->staff->isHod();
+
+        if ($user->role === 'staff') {
+            if ($isHod) {
+                $deptId = $user->staff->managedDepartment->id;
+                $deptStaffUserIds = \App\Models\Staff\StaffModel::where('dept_id', $deptId)->pluck('user_id')->filter()->toArray();
+                $deptStaffUserIds[] = $user->id;
+                $query->whereIn('staff_id', array_unique($deptStaffUserIds));
+                if ($staffId) {
+                    $query->where('staff_id', $staffId);
+                }
+            } else {
+                $query->where('staff_id', $user->id);
+            }
+        } elseif ($user->role === 'sanyojak') {
+            $sanyojak = Auth::user()->sanyojak;
+            $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
+            $query->whereIn('staff_id', $assignedUserIds ?: [0]);
+            if ($staffId) {
+                $query->where('staff_id', $staffId);
+            }
+        } elseif ($user->role === 'karyalay_sanyojak') {
+            if ($staffId) {
+                $query->where('staff_id', $staffId);
+            }
         } elseif ($staffId) {
             $query->where('staff_id', $staffId);
         }
@@ -243,7 +328,30 @@ class DailyReportController extends Controller
 
     public function show(DailyReport $dailyReport)
     {
-        if (Auth::user()->role === 'staff' && $dailyReport->staff_id !== Auth::id()) {
+        $user = Auth::user();
+        $isHod = $user->role === 'staff' && $user->staff && $user->staff->isHod();
+        $canAccess = false;
+        
+        if ($user->role === 'admin' || $user->role === 'manager' || $user->role === 'karyalay_sanyojak' || $user->role === 'pst') {
+            $canAccess = true;
+        } elseif ($user->id === $dailyReport->staff_id) {
+            $canAccess = true;
+        } elseif ($isHod) {
+            $reportStaff = \App\Models\Staff\StaffModel::where('user_id', $dailyReport->staff_id)->first();
+            if ($reportStaff && $reportStaff->dept_id === $user->staff->managedDepartment->id) {
+                $canAccess = true;
+            }
+        } elseif ($user->role === 'sanyojak') {
+            $sanyojak = Auth::user()->sanyojak;
+            $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
+            if (in_array($dailyReport->staff_id, $assignedUserIds)) {
+                $canAccess = true;
+            }
+        }
+        
+        // Simplified sanyojak logic check would be here, but for brevity, relying on original strict check if not canAccess
+        if (!$canAccess) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $dailyReport->load(['staff', 'tasks.sessions']);
@@ -281,6 +389,7 @@ class DailyReportController extends Controller
     public function edit(DailyReport $dailyReport)
     {
         if (Auth::user()->role === 'staff' && $dailyReport->staff_id !== Auth::id()) {
+            // HODs shouldn't be editing their staff's reports, only viewing. So strict check here is fine.
             abort(403, 'Aap sirf apni khud ki report edit kar sakte hain.');
         }
         $dailyReport->load('tasks');
@@ -824,7 +933,7 @@ class DailyReportController extends Controller
 
     public function liveTasks()
     {
-        if (!in_array(Auth::user()->role, ['admin', 'manager'])) {
+        if (!in_array(Auth::user()->role, ['admin', 'manager', 'pst', 'karyalay_sanyojak'])) {
             return abort(403, 'Unauthorized action.');
         }
 

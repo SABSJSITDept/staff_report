@@ -11,7 +11,17 @@ class DepartmentController extends Controller
 {
     public function index(): JsonResponse
     {
-        $departments = DepartmentModel::latest()->get();
+        $departments = DepartmentModel::with('hod')->latest()->get()->map(function($d) {
+            return [
+                'id' => $d->id,
+                'name' => $d->name,
+                'status' => $d->status,
+                'hod_id' => $d->hod_id,
+                'hod_name' => $d->hod ? $d->hod->name : null,
+                'created_at' => $d->created_at,
+                'updated_at' => $d->updated_at
+            ];
+        });
 
         return response()->json([
             'success' => true,
@@ -24,6 +34,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'name'   => ['required', 'string', 'max:255'],
             'status' => ['required', 'in:Active,Inactive'],
+            'hod_id' => ['nullable', 'exists:staff_details,id']
         ]);
 
         $validated['name'] = strtoupper($validated['name']);
@@ -39,7 +50,7 @@ class DepartmentController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $department = DepartmentModel::findOrFail($id);
+        $department = DepartmentModel::with('hod')->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -54,6 +65,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'name'   => ['required', 'string', 'max:255'],
             'status' => ['required', 'in:Active,Inactive'],
+            'hod_id' => ['nullable', 'exists:staff_details,id']
         ]);
 
         $validated['name'] = strtoupper($validated['name']);

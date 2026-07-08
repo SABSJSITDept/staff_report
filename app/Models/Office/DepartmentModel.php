@@ -11,5 +11,11 @@ class DepartmentModel extends Model
     protected $fillable = [
         'name',
         'status',
+        'hod_id',
     ];
+
+    public function hod()
+    {
+        return $this->belongsTo(\App\Models\Staff\StaffModel::class, 'hod_id');
+    }
 }

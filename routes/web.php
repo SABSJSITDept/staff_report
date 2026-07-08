@@ -46,11 +46,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             return redirect()->route('login')->with('success', 'Sabhi sessions clear kar diye gaye hain (Admin bhi logout ho gaya).');
         }
     })->name('logout-all-staff');
+
+    // Rating Configuration routes
+    Route::prefix('rating-config')->name('rating-config.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\RatingConfigController::class, 'index'])->name('index');
+        Route::post('/settings', [\App\Http\Controllers\Admin\RatingConfigController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/category', [\App\Http\Controllers\Admin\RatingConfigController::class, 'storeCategory'])->name('category.store');
+        Route::post('/question', [\App\Http\Controllers\Admin\RatingConfigController::class, 'storeQuestion'])->name('question.store');
+        Route::delete('/category/{id}', [\App\Http\Controllers\Admin\RatingConfigController::class, 'deleteCategory'])->name('category.delete');
+        Route::delete('/question/{id}', [\App\Http\Controllers\Admin\RatingConfigController::class, 'deleteQuestion'])->name('question.delete');
+    });
 });
 
 // Manager routes
 Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')->group(function () {
     Route::get('/dashboard', fn() => view('manager.dashboard'))->name('dashboard');
+});
+
+// Sanyojak routes
+Route::middleware(['auth', 'role:sanyojak'])->prefix('sanyojak')->name('sanyojak.')->group(function () {
+    //
 });
 
 // Staff routes
@@ -100,6 +115,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('department')->name('departmen
 Route::middleware(['auth', 'role:admin'])->prefix('staff')->name('staff.')->group(function () {
     Route::get('/create', fn() => view('Staff.StaffCreate'))->name('create');
     Route::get('/view', fn() => view('Staff.ViewStaff'))->name('view');
+});
+
+// Sanyojak Management (Admin only)
+Route::middleware(['auth', 'role:admin'])->prefix('sanyojak')->name('sanyojak.')->group(function () {
+    Route::get('/create', fn() => view('Sanyojak.SanyojakCreate'))->name('create');
+    Route::get('/view', fn() => view('Sanyojak.ViewSanyojak'))->name('view');
+});
+
+// PST Management (Admin only)
+Route::middleware(['auth', 'role:admin'])->prefix('pst')->name('pst.')->group(function () {
+    Route::get('/create', fn() => view('Pst.PstCreate'))->name('create');
+    Route::get('/view', fn() => view('Pst.ViewPst'))->name('view');
 });
 
 // IT Management (IT Dept only)
@@ -190,4 +217,13 @@ Route::middleware('auth')->prefix('it-tickets')->name('it-tickets.')->group(func
     Route::post('/{itTicket}/reply', [ITTicketController::class, 'reply'])->name('reply');
     Route::post('/{itTicket}/status', [ITTicketController::class, 'updateStatus'])->name('update-status');
     Route::post('/{itTicket}/assign-time', [ITTicketController::class, 'assignTime'])->name('assign-time');
+});
+
+// Staff Rating System
+Route::middleware(['auth'])->prefix('ratings')->name('ratings.')->group(function () {
+    Route::get('/report', [\App\Http\Controllers\RatingController::class, 'report'])->name('report');
+    Route::get('/report/export/excel', [\App\Http\Controllers\RatingController::class, 'exportExcel'])->name('report.export-excel');
+    Route::get('/', [\App\Http\Controllers\RatingController::class, 'index'])->name('index');
+    Route::get('/{staff_id}/create', [\App\Http\Controllers\RatingController::class, 'create'])->name('create');
+    Route::post('/{staff_id}', [\App\Http\Controllers\RatingController::class, 'store'])->name('store');
 });

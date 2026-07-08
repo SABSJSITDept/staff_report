@@ -67,9 +67,11 @@ class LoginController extends Controller
     private function redirectByRole(string $role)
     {
         return match ($role) {
-            'admin'   => redirect()->route('admin.dashboard'),
-            'manager' => redirect()->route('manager.dashboard'),
-            default   => redirect()->route('staff.dashboard'),
+            'admin'    => redirect()->route('admin.dashboard'),
+            'manager'  => redirect()->route('manager.dashboard'),
+            'sanyojak', 'karyalay_sanyojak' => redirect()->route('daily-report.index'),
+            'pst'      => redirect()->route('ratings.report'),
+            default    => redirect()->route('staff.dashboard'),
         };
     }
 }

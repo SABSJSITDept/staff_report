@@ -62,86 +62,90 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800">
-    <nav class="glass-nav text-white">
+@php
+    $isHod = Auth::check() && Auth::user()->role === 'staff' && Auth::user()->staff && Auth::user()->staff->isHod();
+    $ratingSetting = \App\Models\RatingSetting::first();
+    $isRatingActive = $ratingSetting ? $ratingSetting->is_active : false;
+    $canSeeSubmitRating = Auth::check() && ((in_array(Auth::user()->role, ['admin', 'sanyojak', 'karyalay_sanyojak']) || $isHod) && $isRatingActive);
+    $canSeeReports = Auth::check() && Auth::user()->role === 'pst';
+    $canSeeConfig = Auth::check() && Auth::user()->role === 'admin';
+    $canSeeRatingMenu = $canSeeSubmitRating || $canSeeReports || $canSeeConfig;
+@endphp
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
+    <nav class="glass-nav text-white flex-none">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex items-center justify-between h-20">
                 <!-- Left side: Brand/Logo -->
                 <div class="flex-shrink-0 flex items-center">
-                    <a href="{{ Auth::user()->role === 'admin' ? route('admin.dashboard') : (Auth::user()->role === 'manager' ? route('manager.dashboard') : route('staff.dashboard')) }}"
+                    <a href="{{ Auth::user()->role === 'admin' ? route('admin.dashboard') : (Auth::user()->role === 'manager' ? route('manager.dashboard') : (in_array(Auth::user()->role, ['sanyojak', 'karyalay_sanyojak']) ? route('daily-report.index') : (Auth::user()->role === 'pst' ? route('ratings.report') : route('staff.dashboard')))) }}"
                        class="font-bold text-xl hover:text-indigo-200 transition">Dashboard</a>
                 </div>
 
                 <!-- Desktop Menu (Links) -->
                 <div class="hidden md:flex items-center gap-4 lg:gap-6">
-                    {{-- Office Management Dropdown --}}
+                    {{-- Administration Dropdown --}}
                     @if(Auth::user()->role === 'admin')
-                    <div class="relative" id="office-menu-wrapper">
-                        <button onclick="toggleOfficeMenu()"
+                    <div class="relative" id="admin-menu-wrapper">
+                        <button onclick="toggleAdminMenu()"
                             class="flex items-center gap-1 text-sm font-medium hover:text-indigo-200 transition focus:outline-none">
-                            Office Management
+                            Administration
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
-                        <div id="office-dropdown"
-                            class="hidden absolute left-0 mt-2 w-44 bg-white text-gray-700 rounded-xl shadow-lg py-1 z-50 border border-gray-100">
-                            <a href="{{ route('office.create') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                                Add Office
-                            </a>
-                            <a href="{{ route('office.view') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                View Offices
-                            </a>
-                        </div>
-                    </div>
-                    @endif
-
-                    {{-- Department Management Dropdown --}}
-                    @if(Auth::user()->role === 'admin')
-                    <div class="relative" id="department-menu-wrapper">
-                        <button onclick="toggleDepartmentMenu()"
-                            class="flex items-center gap-1 text-sm font-medium hover:text-indigo-200 transition focus:outline-none">
-                            Department Management
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <div id="department-dropdown"
+                        <div id="admin-dropdown"
                             class="hidden absolute left-0 mt-2 w-48 bg-white text-gray-700 rounded-xl shadow-lg py-1 z-50 border border-gray-100">
-                            <a href="{{ route('department.create') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                                Add Department
-                            </a>
-                            <a href="{{ route('department.view') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                View Departments
-                            </a>
+                            
+                            <div class="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Structure</div>
+                            <a href="{{ route('office.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Offices</a>
+                            <a href="{{ route('department.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Departments</a>
+                            
+                            <div class="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1 border-t border-gray-50 pt-2">Roles</div>
+                            <a href="{{ route('sanyojak.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Sanyojaks</a>
+                            <a href="{{ route('pst.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">PST Users</a>
                         </div>
                     </div>
                     @endif
 
-                    {{-- Staff Management Dropdown --}}
+                    {{-- Staff Dropdown --}}
                     @if(in_array(Auth::user()->role, ['admin', 'manager']))
                     <div class="relative" id="staff-menu-wrapper">
                         <button onclick="toggleStaffMenu()"
                             class="flex items-center gap-1 text-sm font-medium hover:text-indigo-200 transition focus:outline-none">
-                            Staff Management
+                            Staff
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
                         <div id="staff-dropdown"
-                            class="hidden absolute left-0 mt-2 w-44 bg-white text-gray-700 rounded-xl shadow-lg py-1 z-50 border border-gray-100">
-                            <a href="{{ route('staff.create') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                                Add Staff
-                            </a>
-                            <a href="{{ route('staff.view') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                View Staff
-                            </a>
+                            class="hidden absolute left-0 mt-2 w-48 bg-white text-gray-700 rounded-xl shadow-lg py-1 z-50 border border-gray-100">
+                            <a href="{{ route('staff.create') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Add Staff</a>
+                            <a href="{{ route('staff.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">View Directory</a>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Ratings Dropdown --}}
+                    @if($canSeeRatingMenu)
+                    <div class="relative" id="ratings-menu-wrapper">
+                        <button onclick="toggleRatingsMenu()"
+                            class="flex items-center gap-1 text-sm font-medium hover:text-indigo-200 transition focus:outline-none">
+                            Ratings
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div id="ratings-dropdown"
+                            class="hidden absolute left-0 mt-2 w-48 bg-white text-gray-700 rounded-xl shadow-lg py-1 z-50 border border-gray-100">
+                            @if($canSeeSubmitRating)
+                            <a href="{{ route('ratings.index') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Submit Rating</a>
+                            @endif
+                            @if($canSeeReports)
+                            <a href="{{ route('ratings.report') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Rating Reports</a>
+                            @endif
+                            @if($canSeeConfig)
+                            <a href="{{ route('admin.rating-config.index') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition border-t border-gray-50 mt-1 pt-2">Rating Questions</a>
+                            @endif
                         </div>
                     </div>
                     @endif
@@ -246,7 +250,7 @@
                         </button>
                         <div id="dailyreport-dropdown"
                             class="hidden absolute left-0 mt-2 w-48 bg-white text-gray-700 rounded-xl shadow-lg py-1 z-50 border border-gray-100">
-                            @if(in_array(Auth::user()->role, ['admin', 'manager']))
+                            @if(in_array(Auth::user()->role, ['admin', 'manager', 'pst', 'karyalay_sanyojak']))
                             <a href="{{ route('daily-report.live-tasks') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-green-50 text-green-600 font-bold transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                 Live Tasks
@@ -260,24 +264,30 @@
                             </a>
                             @endif
 
+                            @if(!in_array(Auth::user()->role, ['sanyojak', 'karyalay_sanyojak', 'pst']))
                             <a href="{{ route('staff.daily-backup.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
                                 My Daily Backup
                             </a>
+                            @endif
 
+                            @if(!in_array(Auth::user()->role, ['sanyojak']))
                             <a href="{{ route('daily-report.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                View Reports
+                                {{ $isHod ? 'Department Reports' : 'View Reports' }}
                             </a>
+                            @endif
                         </div>
                     </div>
 
                     {{-- IT Support Top Level --}}
+                    @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
                     <a href="{{ route('it-tickets.index') }}"
                        class="text-sm font-medium hover:text-indigo-200 transition focus:outline-none flex items-center gap-1.5 lg:ml-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                         IT Support
                     </a>
+                    @endif
                 </div>
 
                 <!-- Right side: User Info & Logout (Desktop) -->
@@ -300,9 +310,11 @@
                                     No new notifications.
                                 </div>
                             </div>
+                            @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
                             <div class="px-4 py-2 text-center bg-gray-50 rounded-b-xl">
                                 <a href="{{ route('it-tickets.index') }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">View IT Support Dashboard</a>
                             </div>
+                            @endif
                         </div>
                     </div>
 
@@ -354,9 +366,11 @@
                                     No new notifications.
                                 </div>
                             </div>
+                            @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
                             <div class="px-4 py-2 text-center bg-gray-50 rounded-b-xl">
                                 <a href="{{ route('it-tickets.index') }}" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-medium transition">View IT Support Dashboard</a>
                             </div>
+                            @endif
                         </div>
                     </div>
 
@@ -402,6 +416,21 @@
                 @if(in_array(Auth::user()->role, ['admin', 'manager']))
                     <a href="{{ route('staff.view') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">Staff Management</a>
                 @endif
+                @if(Auth::user()->role === 'admin')
+                    <a href="{{ route('sanyojak.view') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">Sanyojak Management</a>
+                    <a href="{{ route('pst.view') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">PST Management</a>
+                @endif
+                
+                @if($canSeeSubmitRating)
+                    <a href="{{ route('ratings.index') }}" class="block px-3 py-2 rounded-md text-base font-medium text-yellow-300 hover:bg-indigo-600 transition">Staff Ratings</a>
+                @endif
+                @if($canSeeReports)
+                    <a href="{{ route('ratings.report') }}" class="block px-3 py-2 rounded-md text-base font-medium text-yellow-300 hover:bg-indigo-600 transition">Rating Reports</a>
+                @endif
+                @if($canSeeConfig)
+                    <a href="{{ route('admin.rating-config.index') }}" class="block px-3 py-2 rounded-md text-base font-medium text-yellow-300 hover:bg-indigo-600 transition">Rating Config</a>
+                @endif
+
 
                 @if(Auth::user()->canAccessIT())
                     <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider px-3 py-2">IT & Stock</div>
@@ -414,7 +443,7 @@
                 @endif
 
                 <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider px-3 py-2">Daily Work</div>
-                @if(in_array(Auth::user()->role, ['admin', 'manager']))
+                @if(in_array(Auth::user()->role, ['admin', 'manager', 'pst']))
                 <a href="{{ route('daily-report.live-tasks') }}" class="block px-3 py-2 rounded-md text-base font-medium text-green-300 hover:bg-indigo-600 transition">Live Tasks</a>
                 @endif
 
@@ -422,18 +451,41 @@
                 <a href="{{ route('staff.track-task') }}" class="block px-3 py-2 rounded-md text-base font-medium text-green-300 hover:bg-indigo-600 transition">Track My Task</a>
                 @endif
 
+                @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
                 <a href="{{ route('staff.daily-backup.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">My Daily Backup</a>
-                <a href="{{ route('daily-report.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">View Reports</a>
+                @endif
+                <a href="{{ route('daily-report.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">{{ $isHod ? 'Department Reports' : 'View Reports' }}</a>
                 
+                @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
                 <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider px-3 py-2 mt-2">Support</div>
                 <a href="{{ route('it-tickets.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">IT Support & Tickets</a>
+                @endif
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         @yield('content')
     </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-auto flex-none shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+            <div class="text-[10px] sm:text-xs text-gray-500 font-medium">
+                DEVELOPED BY <span class="font-bold text-gray-700">IT DEPARTMENT SABSJS (CENTRAL OFFICE)</span>
+            </div>
+            <div class="relative group">
+                <button class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center focus:outline-none hover:bg-indigo-200 transition shadow-sm">
+                    <span class="text-xs font-bold italic font-serif">i</span>
+                </button>
+                <div class="absolute bottom-full right-0 mb-3 w-52 bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 p-4 pointer-events-none z-50 border border-gray-700">
+                    <div class="font-bold mb-2 text-indigo-300 border-b border-gray-600 pb-1">Developer Contact</div>
+                    <div class="mb-1"><span class="text-gray-400">Name:</span> ADITYA</div>
+                    <div><span class="text-gray-400">Phone:</span> 9636501008</div>
+                    <div class="absolute -bottom-1.5 right-2 w-3 h-3 bg-gray-800 border-b border-r border-gray-700 rotate-45"></div>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     {{-- Global Change Password Modal --}}
     <div id="global-change-password-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
@@ -507,11 +559,12 @@
             closeIcon.classList.toggle('hidden');
         }
 
-        function toggleOfficeMenu() {
-            document.getElementById('office-dropdown').classList.toggle('hidden');
+        // Desktop Menu Toggles
+        function toggleAdminMenu() {
+            document.getElementById('admin-dropdown').classList.toggle('hidden');
         }
-        function toggleDepartmentMenu() {
-            document.getElementById('department-dropdown').classList.toggle('hidden');
+        function toggleRatingsMenu() {
+            document.getElementById('ratings-dropdown').classList.toggle('hidden');
         }
         function toggleStaffMenu() {
             document.getElementById('staff-dropdown').classList.toggle('hidden');
@@ -538,12 +591,42 @@
             document.getElementById('mobile-notifications-dropdown').classList.toggle('hidden');
         }
 
-        // Close dropdowns when clicking outside
+        // Close desktop dropdowns when clicking outside
+        window.addEventListener('click', function(e) {
+            const adminMenu = document.getElementById('admin-menu-wrapper');
+            const ratingsMenu = document.getElementById('ratings-menu-wrapper');
+            const staffMenu = document.getElementById('staff-menu-wrapper');
+            const itMenu = document.getElementById('it-menu-wrapper');
+            const stockMenu = document.getElementById('stock-menu-wrapper');
+            const dailyreportMenu = document.getElementById('dailyreport-menu-wrapper');
+
+            if (adminMenu && !adminMenu.contains(e.target)) {
+                document.getElementById('admin-dropdown')?.classList.add('hidden');
+            }
+            if (ratingsMenu && !ratingsMenu.contains(e.target)) {
+                document.getElementById('ratings-dropdown')?.classList.add('hidden');
+            }
+            if (staffMenu && !staffMenu.contains(e.target)) {
+                document.getElementById('staff-dropdown')?.classList.add('hidden');
+            }
+            if (itMenu && !itMenu.contains(e.target)) {
+                document.getElementById('it-dropdown')?.classList.add('hidden');
+            }
+            if (stockMenu && !stockMenu.contains(e.target)) {
+                document.getElementById('stock-dropdown')?.classList.add('hidden');
+            }
+            if (dailyreportMenu && !dailyreportMenu.contains(e.target)) {
+                document.getElementById('dailyreport-dropdown')?.classList.add('hidden');
+            }
+        });
+
+        // Close other dropdowns when clicking outside
         document.addEventListener('click', function (e) {
             const dropdowns = [
                 { wrapper: 'office-menu-wrapper', dropdown: 'office-dropdown' },
                 { wrapper: 'department-menu-wrapper', dropdown: 'department-dropdown' },
                 { wrapper: 'staff-menu-wrapper', dropdown: 'staff-dropdown' },
+                { wrapper: 'sanyojak-menu-wrapper', dropdown: 'sanyojak-dropdown' },
                 { wrapper: 'it-menu-wrapper', dropdown: 'it-dropdown' },
                 { wrapper: 'stock-menu-wrapper', dropdown: 'stock-dropdown' },
                 { wrapper: 'dailyreport-menu-wrapper', dropdown: 'dailyreport-dropdown' },

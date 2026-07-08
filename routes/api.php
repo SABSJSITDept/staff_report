@@ -21,3 +21,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::apiResource('offices', \App\Http\Controllers\Office\OfficeController::class);
 Route::apiResource('departments', \App\Http\Controllers\Departments\DepartmentController::class);
 Route::apiResource('staff', \App\Http\Controllers\Staff\StaffController::class);
+Route::apiResource('sanyojaks', \App\Http\Controllers\SanyojakController::class);
+Route::apiResource('psts', \App\Http\Controllers\PstController::class);

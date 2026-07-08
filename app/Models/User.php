@@ -59,6 +59,21 @@ class User extends Authenticatable
         return $this->role === 'staff';
     }
 
+    public function isSanyojak(): bool
+    {
+        return $this->role === 'sanyojak';
+    }
+
+    public function isKaryalaySanyojak(): bool
+    {
+        return $this->role === 'karyalay_sanyojak';
+    }
+
+    public function isPst(): bool
+    {
+        return $this->role === 'pst';
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
@@ -67,6 +82,11 @@ class User extends Authenticatable
     public function staff()
     {
         return $this->hasOne(\App\Models\Staff\StaffModel::class, 'user_id');
+    }
+
+    public function sanyojak()
+    {
+        return $this->hasOne(\App\Models\Sanyojak::class, 'user_id');
     }
 
     public function notifications()

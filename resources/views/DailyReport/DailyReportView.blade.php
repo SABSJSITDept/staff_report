@@ -1,6 +1,10 @@
 @extends('layouts.app')
 @section('title', 'Daily Reports')
 
+@php
+    $isHod = Auth::check() && Auth::user()->role === 'staff' && Auth::user()->staff && Auth::user()->staff->isHod();
+@endphp
+
 @section('content')
 
 {{-- Toast --}}
@@ -109,7 +113,7 @@
 {{-- Filters Bar --}}
 <div class="card-premium mb-8 overflow-visible">
     <form action="{{ route('daily-report.index') }}" method="GET" id="export-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        @if(Auth::user()->role !== 'staff')
+        @if(Auth::user()->role !== 'staff' || $isHod)
         <div class="space-y-2">
             <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Office / Branch</label>
             <div class="relative">

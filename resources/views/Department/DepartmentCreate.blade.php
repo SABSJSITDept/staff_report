@@ -103,6 +103,34 @@
                         </p>
                     </div>
 
+                    {{-- HOD --}}
+                    <div class="sm:col-span-2">
+                        <label for="hod_id" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                            Head of Department (HOD)
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                            <select id="hod_id" name="hod_id"
+                                class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 appearance-none
+                                       focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                <option value="">-- No HOD Assigned --</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-red-500 text-xs mt-1.5 hidden flex items-center gap-1" id="err-hod_id">
+                            <svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            <span></span>
+                        </p>
+                    </div>
+
                 </div>
 
                 {{-- Submit Button --}}
@@ -165,9 +193,9 @@
             el.querySelector('span').textContent = '';
         }
     }
-
+    
     function clearErrors() {
-        ['name', 'status'].forEach(f => setError(f, ''));
+        ['name', 'status', 'hod_id'].forEach(f => setError(f, ''));
     }
 
     // ─── Auto-uppercase name input ────────────────────────────
@@ -184,10 +212,10 @@
         document.getElementById('form-heading').textContent = 'New Department Add Karein';
         document.getElementById('breadcrumb-label').textContent = 'New Department';
         document.getElementById('submit-label').textContent = 'Save Department';
+        document.getElementById('hod_id').value = '';
         clearErrors();
     }
 
-    // ─── Load for Edit (if ?id= in URL) ──────────────────────
     async function loadForEdit(id) {
         try {
             const res = await fetch(`${API_BASE}/${id}`, { headers: HEADERS });
@@ -197,6 +225,7 @@
             document.getElementById('department-id').value = d.id;
             document.getElementById('name').value = d.name;
             document.getElementById('status').value = d.status;
+            document.getElementById('hod_id').value = d.hod_id || '';
             document.getElementById('form-heading').textContent = 'Department Update Karein';
             document.getElementById('breadcrumb-label').textContent = 'Edit Department';
             document.getElementById('submit-label').textContent = 'Update Department';
@@ -205,10 +234,36 @@
         }
     }
 
+    // ─── Load Staff List for HOD Dropdown ─────────────────────
+    async function fetchStaffList() {
+        try {
+            const res = await fetch('/api/staff', { headers: HEADERS });
+            const data = await res.json();
+            if (data.success) {
+                const hodSelect = document.getElementById('hod_id');
+                // Keep the first option
+                const firstOption = hodSelect.options[0];
+                hodSelect.innerHTML = '';
+                hodSelect.appendChild(firstOption);
+                
+                data.data.forEach(staff => {
+                    const opt = document.createElement('option');
+                    opt.value = staff.id;
+                    opt.textContent = `${staff.name} (${staff.designation || 'Staff'})`;
+                    hodSelect.appendChild(opt);
+                });
+            }
+        } catch {
+            console.error('Failed to load staff list for HOD dropdown');
+        }
+    }
+
     // ─── On page load ─────────────────────────────────────────
-    const urlParams = new URLSearchParams(window.location.search);
-    const editId = urlParams.get('id');
-    if (editId) loadForEdit(editId);
+    fetchStaffList().then(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('id');
+        if (editId) loadForEdit(editId);
+    });
 
     // ─── Submit (Create / Update) ─────────────────────────────
     document.getElementById('department-form').addEventListener('submit', async function (e) {
@@ -217,7 +272,8 @@
 
         const id     = document.getElementById('department-id').value;
         const name   = document.getElementById('name').value.trim();
-        const status = document.getElementById('status').value;
+        const status = document.getElementById('status').value; 
+        const hod_id = document.getElementById('hod_id').value;
 
         // Client-side validation
         let hasError = false;
@@ -231,7 +287,7 @@
         const isEdit  = id !== '';
         const url     = isEdit ? `${API_BASE}/${id}` : API_BASE;
         const method  = isEdit ? 'PUT' : 'POST';
-        const payload = { name, status };
+        const payload = { name, status, hod_id: hod_id || null };
 
         try {
             const response = await fetch(url, {

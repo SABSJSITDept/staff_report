@@ -58,4 +58,14 @@ class StaffModel extends Model
     {
         return $this->hasMany(\App\Models\StockAllotment::class, 'staff_id');
     }
+
+    public function managedDepartment()
+    {
+        return $this->hasOne(DepartmentModel::class, 'hod_id');
+    }
+
+    public function isHod(): bool
+    {
+        return $this->managedDepartment()->exists();
+    }
 }
