@@ -247,17 +247,17 @@
 
             // Buttons visibility
             if (currentStep === 1) {
-                prevBtn.classList.add('hidden');
+                prevBtn.style.display = 'none';
             } else {
-                prevBtn.classList.remove('hidden');
+                prevBtn.style.display = 'inline-flex';
             }
 
             if (currentStep === totalSteps) {
-                nextBtn.classList.add('hidden');
-                submitBtn.classList.remove('hidden');
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'inline-flex';
             } else {
-                nextBtn.classList.remove('hidden');
-                submitBtn.classList.add('hidden');
+                nextBtn.style.display = 'inline-flex';
+                submitBtn.style.display = 'none';
             }
             
             // Scroll to top of form
@@ -308,5 +308,4 @@
         updateUI();
     });
 </script>
-</div>
 @endsection
