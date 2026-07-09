@@ -260,8 +260,8 @@
                 submitBtn.style.display = 'none';
             }
             
-            // Scroll to top of form
-            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Scroll to top of page to avoid sticky nav overlap
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function validateCurrentStep() {
