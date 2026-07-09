@@ -58,7 +58,7 @@
                             {{ $user->role }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-gray-400">{{ $user->created_at->format('d M Y') }}</td>
+                    <td class="px-4 py-3 text-gray-400">{{ $user->created_at?->format('d M Y') ?? 'N/A' }}</td>
                 </tr>
                 @endforeach
             </tbody>
