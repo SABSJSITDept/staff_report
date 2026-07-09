@@ -77,7 +77,53 @@
         </div>
     @endif
 
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+    {{-- Mobile Card Layout --}}
+    <div class="md:hidden space-y-3">
+        @forelse($staff as $member)
+            @php
+                $isRated = \App\Models\RatingReportCard::where('staff_id', $member->id)
+                            ->where('rating_given_by_id', auth()->id())
+                            ->exists();
+            @endphp
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
+                            {{ strtoupper(substr($member->name, 0, 1)) }}
+                        </div>
+                        <div class="ml-3 min-w-0">
+                            <div class="text-sm font-medium text-slate-900 truncate">{{ $member->name }}</div>
+                            <div class="text-xs text-slate-500">ID: #{{ $member->id }}</div>
+                        </div>
+                    </div>
+                    @if($isRated)
+                        <span class="flex-shrink-0 inline-flex items-center px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg text-xs font-medium text-green-700">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            Rated
+                        </span>
+                    @else
+                        <a href="{{ route('ratings.create', $member->id) }}" class="flex-shrink-0 inline-flex items-center px-3 py-1.5 bg-indigo-50 border border-transparent rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-100 shadow-sm transition-all duration-200">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                            Rate Staff
+                        </a>
+                    @endif
+                </div>
+                <div class="mt-2 ml-13 pl-0.5">
+                    <div class="text-xs text-slate-500 truncate">{{ $member->email }}</div>
+                </div>
+            </div>
+        @empty
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center">
+                <svg class="mx-auto h-12 w-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <p class="text-slate-500 text-lg font-medium">No staff found for rating.</p>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Desktop Table Layout --}}
+    <div class="hidden md:block bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50">
