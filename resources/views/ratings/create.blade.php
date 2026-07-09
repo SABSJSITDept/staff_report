@@ -308,4 +308,4 @@
         updateUI();
     });
 </script>
-@endsection
+@endpush
