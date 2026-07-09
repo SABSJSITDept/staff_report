@@ -191,6 +191,7 @@
         @endif
     </form>
 </div>
+@endsection
 
 @push('scripts')
 <script>
