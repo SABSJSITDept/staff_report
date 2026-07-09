@@ -26,6 +26,9 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <a href="{{ route('sanyojak.export') }}" class="btn-primary !bg-green-600 !text-white px-6 py-3 hover:!bg-green-700 transition">
+                Export to Excel
+            </a>
             <a href="{{ route('sanyojak.create') }}" class="btn-primary !bg-white !text-indigo-600 px-6 py-3">
                 Register Sanyojak
             </a>

@@ -411,12 +411,9 @@
 </div>
 
 @if($reports->count() > 0)
-<div class="card-premium mt-6 px-5 py-4 bg-slate-50 flex flex-col md:flex-row items-center justify-between border border-slate-100 gap-4">
-    <p class="text-xs text-gray-400">
-        Total <span class="font-semibold text-gray-600" id="visible-count">{{ $totalTasksCount }}</span> tasks across {{ $reports->count() }} reports on this page
-    </p>
-    <div class="w-full md:w-auto">
-        {{ $reports->appends(request()->query())->links() }}
+<div class="sticky bottom-4 z-40 mt-8 mb-2">
+    <div class="shadow-lg shadow-slate-200/50 rounded-xl border border-slate-200/80 bg-white/95 backdrop-blur-xl">
+        {{ $reports->appends(request()->query())->links('vendor.pagination.premium') }}
     </div>
 </div>
 @endif

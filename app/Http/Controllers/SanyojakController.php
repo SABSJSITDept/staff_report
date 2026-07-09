@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Exports\SanyojakExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SanyojakController extends Controller
 {
@@ -20,6 +22,11 @@ class SanyojakController extends Controller
             'success' => true,
             'data' => $sanyojaks
         ]);
+    }
+
+    public function export()
+    {
+        return Excel::download(new SanyojakExport, 'sanyojaks.xlsx');
     }
 
     public function store(Request $request)

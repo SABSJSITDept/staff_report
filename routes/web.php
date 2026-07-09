@@ -121,6 +121,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('staff')->name('staff.')->grou
 Route::middleware(['auth', 'role:admin'])->prefix('sanyojak')->name('sanyojak.')->group(function () {
     Route::get('/create', fn() => view('Sanyojak.SanyojakCreate'))->name('create');
     Route::get('/view', fn() => view('Sanyojak.ViewSanyojak'))->name('view');
+    Route::get('/export', [\App\Http\Controllers\SanyojakController::class, 'export'])->name('export');
 });
 
 // PST Management (Admin only)
