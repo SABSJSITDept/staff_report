@@ -48,8 +48,13 @@ class DailyReportController extends Controller
         } elseif ($user->role === 'sanyojak') {
             $sanyojak = Auth::user()->sanyojak;
             $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
-            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
-            $query->whereIn('staff_id', $assignedUserIds ?: [0]); // 0 to avoid empty in clause returning everything
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $query->where(function($q) use ($assignedUserIds, $assignedStaffIds) {
+                $q->whereIn('staff_id', $assignedUserIds ?: [0])
+                  ->orWhereHas('staff.staff', function($sq) use ($assignedStaffIds) {
+                      $sq->whereIn('id', $assignedStaffIds ?: [0]);
+                  });
+            });
             
             if (request()->filled('staff_id')) {
                 $query->where('staff_id', request('staff_id'));
@@ -97,8 +102,13 @@ class DailyReportController extends Controller
         } elseif ($user->role === 'sanyojak') {
             $sanyojak = Auth::user()->sanyojak;
             $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
-            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
-            $statsQuery->whereIn('staff_id', $assignedUserIds ?: [0]);
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $statsQuery->where(function($q) use ($assignedUserIds, $assignedStaffIds) {
+                $q->whereIn('staff_id', $assignedUserIds ?: [0])
+                  ->orWhereHas('staff.staff', function($sq) use ($assignedStaffIds) {
+                      $sq->whereIn('id', $assignedStaffIds ?: [0]);
+                  });
+            });
         } elseif ($user->role === 'karyalay_sanyojak') {
             // Can see all stats
         }
@@ -122,8 +132,13 @@ class DailyReportController extends Controller
             if ($user->role === 'sanyojak') {
                 $sanyojak = Auth::user()->sanyojak;
                 $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
-                $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
-                $staffQuery->whereIn('id', $assignedUserIds ?: [0]);
+                $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+                $staffQuery->where(function($q) use ($assignedUserIds, $assignedStaffIds) {
+                    $q->whereIn('id', $assignedUserIds ?: [0])
+                      ->orWhereHas('staff', function($sq) use ($assignedStaffIds) {
+                          $sq->whereIn('id', $assignedStaffIds ?: [0]);
+                      });
+                });
             } elseif ($user->role === 'karyalay_sanyojak') {
                 // Gets all staff
             } elseif ($isHod) {
@@ -176,8 +191,13 @@ class DailyReportController extends Controller
         } elseif ($user->role === 'sanyojak') {
             $sanyojak = Auth::user()->sanyojak;
             $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
-            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
-            $query->whereIn('staff_id', $assignedUserIds ?: [0]);
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $query->where(function($q) use ($assignedUserIds, $assignedStaffIds) {
+                $q->whereIn('staff_id', $assignedUserIds ?: [0])
+                  ->orWhereHas('staff.staff', function($sq) use ($assignedStaffIds) {
+                      $sq->whereIn('id', $assignedStaffIds ?: [0]);
+                  });
+            });
             if ($staffId) {
                 $query->where('staff_id', $staffId);
             }
@@ -344,8 +364,9 @@ class DailyReportController extends Controller
         } elseif ($user->role === 'sanyojak') {
             $sanyojak = Auth::user()->sanyojak;
             $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
-            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->pluck('user_id')->filter()->toArray();
-            if (in_array($dailyReport->staff_id, $assignedUserIds)) {
+            $assignedUserIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds ?: [0])->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $staffLinked = \App\Models\Staff\StaffModel::where('user_id', $dailyReport->staff_id)->whereIn('id', $assignedStaffIds)->exists();
+            if (in_array($dailyReport->staff_id, $assignedUserIds) || $staffLinked) {
                 $canAccess = true;
             }
         }

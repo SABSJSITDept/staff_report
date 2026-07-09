@@ -34,8 +34,13 @@ class RatingController extends Controller
             if (is_string($staffAssignedIds)) {
                 $staffAssignedIds = json_decode($staffAssignedIds, true);
             }
-            $userIds = StaffModel::whereIn('id', $staffAssignedIds)->pluck('user_id')->toArray();
-            $query->whereIn('id', $userIds);
+            $userIds = StaffModel::whereIn('id', $staffAssignedIds)->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $query->where(function($q) use ($userIds, $staffAssignedIds) {
+                $q->whereIn('id', $userIds ?: [0])
+                  ->orWhereHas('staff', function($sq) use ($staffAssignedIds) {
+                      $sq->whereIn('id', $staffAssignedIds ?: [0]);
+                  });
+            });
         } elseif ($isHod) {
             $deptId = $user->staff->managedDepartment->id;
             $deptStaffUserIds = StaffModel::where('dept_id', $deptId)->where('user_id', '!=', $user->id)->pluck('user_id')->filter()->toArray();
@@ -105,8 +110,9 @@ class RatingController extends Controller
             if (is_string($staffAssignedIds)) {
                 $staffAssignedIds = json_decode($staffAssignedIds, true);
             }
-            $userIds = StaffModel::whereIn('id', $staffAssignedIds)->pluck('user_id')->toArray();
-            if (!in_array($staff_id, $userIds)) {
+            $userIds = StaffModel::whereIn('id', $staffAssignedIds)->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $staffLinked = StaffModel::where('user_id', $staff_id)->whereIn('id', $staffAssignedIds)->exists();
+            if (!in_array($staff_id, $userIds) && !$staffLinked) {
                 abort(403, 'Unauthorized action.');
             }
         } elseif ($isHod) {
@@ -151,8 +157,9 @@ class RatingController extends Controller
             if (is_string($staffAssignedIds)) {
                 $staffAssignedIds = json_decode($staffAssignedIds, true);
             }
-            $userIds = StaffModel::whereIn('id', $staffAssignedIds)->pluck('user_id')->toArray();
-            if (!in_array($staff_id, $userIds)) {
+            $userIds = StaffModel::whereIn('id', $staffAssignedIds)->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
+            $staffLinked = StaffModel::where('user_id', $staff_id)->whereIn('id', $staffAssignedIds)->exists();
+            if (!in_array($staff_id, $userIds) && !$staffLinked) {
                 abort(403, 'Unauthorized action.');
             }
         } elseif ($isHod) {

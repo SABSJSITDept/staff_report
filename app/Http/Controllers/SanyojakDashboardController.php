@@ -22,14 +22,19 @@ class SanyojakDashboardController extends Controller
         $staffAssignedIds = $sanyojak->staff_assigned ?? [];
         
         // Get user_ids for the assigned staff
-        $userIds = StaffModel::whereIn('id', $staffAssignedIds)->pluck('user_id')->toArray();
+        $userIds = StaffModel::whereIn('id', $staffAssignedIds)->whereNotNull('user_id')->pluck('user_id')->filter()->toArray();
 
         // Optional date filter, default to today
         $date = $request->input('date', Carbon::today()->toDateString());
 
         // Fetch reports for these users on the specific date
         $reports = DailyReport::with(['staff.staff', 'tasks'])
-            ->whereIn('staff_id', $userIds)
+            ->where(function($q) use ($userIds, $staffAssignedIds) {
+                $q->whereIn('staff_id', $userIds ?: [0])
+                  ->orWhereHas('staff.staff', function($sq) use ($staffAssignedIds) {
+                      $sq->whereIn('id', $staffAssignedIds ?: [0]);
+                  });
+            })
             ->whereDate('report_date', $date)
             ->orderBy('created_at', 'desc')
             ->get();
