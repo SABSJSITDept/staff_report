@@ -165,14 +165,15 @@
                 <button type="button" onclick="setQuickRange('month')" class="flex-1 px-4 py-3.5 rounded-2xl bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition">Month</button>
             </div>
             
-            <div class="relative group">
-                <button type="button" class="btn-primary">
+            <div class="relative" id="export-dropdown-wrapper">
+                <button type="button" class="btn-primary" onclick="toggleExportDropdown(event)">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
                     Export
                 </button>
-                <div class="absolute right-0 bottom-full mb-3 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden hidden group-hover:block z-50 animate-in fade-in slide-in-from-bottom-2">
+                <div id="export-dropdown-menu" class="absolute right-0 bottom-full mb-1 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden hidden z-50">
+                    <div class="absolute left-0 right-0 top-full h-3"></div>
                     <button type="submit" onclick="document.getElementById('export-form').action='{{ route('daily-report.export') }}'" name="type" value="excel" class="w-full px-5 py-4 text-left text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition">
                         <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -484,6 +485,20 @@
 @push('scripts')
 <script>
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // ── Export Dropdown Toggle ────────────────────────────
+    function toggleExportDropdown(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('export-dropdown-menu');
+        menu.classList.toggle('hidden');
+    }
+    document.addEventListener('click', function(e) {
+        const wrapper = document.getElementById('export-dropdown-wrapper');
+        const menu = document.getElementById('export-dropdown-menu');
+        if (wrapper && menu && !wrapper.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
 
     // ── Toast ──────────────────────────────────────────────
     function showToast(message, type = 'success') {
