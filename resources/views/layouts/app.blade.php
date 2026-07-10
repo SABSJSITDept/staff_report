@@ -271,12 +271,10 @@
                             </a>
                             @endif
 
-                            @if(!in_array(Auth::user()->role, ['sanyojak']))
                             <a href="{{ route('daily-report.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
                                 {{ $isHod ? 'Department Reports' : 'View Reports' }}
                             </a>
-                            @endif
                         </div>
                     </div>
 

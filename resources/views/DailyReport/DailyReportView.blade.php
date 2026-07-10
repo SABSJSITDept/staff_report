@@ -262,9 +262,9 @@
             </div>
             
             <!-- Tasks List/Table inside Date Group -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm text-left">
-                    <thead>
+            <div class="overflow-x-auto md:overflow-visible">
+                <table class="min-w-full text-sm text-left block md:table">
+                    <thead class="hidden md:table-header-group">
                         <tr class="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                             <th class="px-6 py-4 w-[45%]">Task Details</th>
                             <th class="px-6 py-4 w-[25%] text-center">Timings & Duration</th>
@@ -272,15 +272,15 @@
                             <th class="px-6 py-4 w-[10%] text-right text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-slate-100 block md:table-row-group">
                         @php
                             $staffGrouped = $dayReports->groupBy('staff_id');
                         @endphp
                         @foreach($staffGrouped as $staffId => $staffReports)
                             @if(Auth::user()->role !== 'staff')
                                 @php $firstRep = $staffReports->first(); @endphp
-                                <tr class="bg-indigo-50/50 group-staff-row" data-staff-id="{{ $staffId }}">
-                                    <td colspan="4" class="px-6 py-3 border-y border-indigo-100">
+                                <tr class="bg-indigo-50/50 group-staff-row block md:table-row" data-staff-id="{{ $staffId }}">
+                                    <td colspan="4" class="px-6 py-3 border-y border-indigo-100 block md:table-cell">
                                         <div class="flex items-center gap-3">
                                             <div class="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center text-white font-bold text-xs shadow-sm flex-shrink-0">
                                                 {{ strtoupper(substr($firstRep->staff->name ?? 'U', 0, 1)) }}
@@ -295,11 +295,11 @@
                             @endif
                             @foreach($staffReports as $report)
                                 @foreach($report->tasks as $task)
-                                    <tr class="hover:bg-slate-50/50 transition-colors task-row" data-staff-id="{{ $report->staff_id }}" data-time-spend="{{ strtolower($task->time_spend) }}">
+                                    <tr class="hover:bg-slate-50/50 transition-colors task-row block md:table-row border-b border-slate-100 md:border-b-0 p-4 md:p-0" data-staff-id="{{ $report->staff_id }}" data-time-spend="{{ strtolower($task->time_spend) }}">
                                         
-                                        <td class="px-6 py-4 {{ Auth::user()->role !== 'staff' ? 'pl-12' : '' }}">
+                                        <td class="px-4 py-3 md:px-6 md:py-4 {{ Auth::user()->role !== 'staff' ? 'md:pl-12' : '' }} block md:table-cell">
                                         <div class="min-w-0">
-                                            <p class="font-semibold text-slate-800 text-sm leading-tight flex items-center gap-2">
+                                            <p class="font-semibold text-slate-800 text-sm leading-tight flex flex-wrap items-center gap-2">
                                                 {{ $task->task_title }}
                                                 @if($task->assigned_by)
                                                     <span class="text-[9px] uppercase tracking-wider font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded w-fit border border-indigo-100">
@@ -323,76 +323,83 @@
                                                 <p class="text-xs text-slate-400 mt-1 leading-relaxed whitespace-pre-wrap" title="{{ $task->description }}">{{ $task->description }}</p>
                                             @endif
                                         </div>
-                                    </td>
-                                    
-                                    <td class="px-6 py-4 text-center">
-                                        <div class="flex flex-col items-center gap-1.5 justify-center">
-                                            @if($task->sessions && $task->sessions->count() > 0)
-                                                @foreach($task->sessions as $session)
-                                                    @if($session->start_time && $session->end_time)
-                                                        <div class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 whitespace-nowrap">
-                                                            {{ \Carbon\Carbon::parse($session->start_time)->format('h:i A') }} — {{ \Carbon\Carbon::parse($session->end_time)->format('h:i A') }}
-                                                        </div>
-                                                    @elseif($session->start_time)
-                                                        <div class="text-[10px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100/50 animate-pulse whitespace-nowrap">
-                                                            Started: {{ \Carbon\Carbon::parse($session->start_time)->format('h:i A') }}
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            @elseif($task->start_time && $task->end_time)
-                                                <div class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 whitespace-nowrap">
-                                                    {{ \Carbon\Carbon::parse($task->start_time)->format('h:i A') }} — {{ \Carbon\Carbon::parse($task->end_time)->format('h:i A') }}
+                                        </td>
+                                        
+                                        <td class="px-4 py-2 md:px-6 md:py-4 block md:table-cell">
+                                            <div class="flex flex-row md:flex-col items-center gap-1.5 justify-start md:justify-center">
+                                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:hidden mr-2">Timings:</span>
+                                                <div class="flex flex-wrap gap-1.5 items-center">
+                                                @if($task->sessions && $task->sessions->count() > 0)
+                                                    @foreach($task->sessions as $session)
+                                                        @if($session->start_time && $session->end_time)
+                                                            <div class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 whitespace-nowrap">
+                                                                {{ \Carbon\Carbon::parse($session->start_time)->format('h:i A') }} — {{ \Carbon\Carbon::parse($session->end_time)->format('h:i A') }}
+                                                            </div>
+                                                        @elseif($session->start_time)
+                                                            <div class="text-[10px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100/50 animate-pulse whitespace-nowrap">
+                                                                Started: {{ \Carbon\Carbon::parse($session->start_time)->format('h:i A') }}
+                                                            </div>
+                                                        @endif
+                                                    @endforeach
+                                                @elseif($task->start_time && $task->end_time)
+                                                    <div class="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 whitespace-nowrap">
+                                                        {{ \Carbon\Carbon::parse($task->start_time)->format('h:i A') }} — {{ \Carbon\Carbon::parse($task->end_time)->format('h:i A') }}
+                                                    </div>
+                                                @elseif($task->start_time)
+                                                    <div class="text-[10px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100/50 animate-pulse whitespace-nowrap">
+                                                        Started: {{ \Carbon\Carbon::parse($task->start_time)->format('h:i A') }}
+                                                    </div>
+                                                @endif
+                                                
+                                                @if($task->time_spend)
+                                                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold border border-indigo-100">
+                                                        {{ $task->time_spend }}
+                                                    </span>
+                                                @endif
                                                 </div>
-                                            @elseif($task->start_time)
-                                                <div class="text-[10px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded border border-green-100/50 animate-pulse whitespace-nowrap">
-                                                    Started: {{ \Carbon\Carbon::parse($task->start_time)->format('h:i A') }}
-                                                </div>
-                                            @endif
-                                            
-                                            @if($task->time_spend)
-                                                <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold border border-indigo-100">
-                                                    {{ $task->time_spend }}
+                                            </div>
+                                        </td>
+                                        
+                                        <td class="px-4 py-2 md:px-6 md:py-4 block md:table-cell">
+                                            <div class="flex items-center justify-start md:justify-center">
+                                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:hidden mr-2">Status:</span>
+                                                @php
+                                                    $badgeClasses = [
+                                                        'completed'  => 'bg-green-50 text-green-700 border border-green-100',
+                                                        'in_progress'=> 'bg-blue-50 text-blue-700 border border-blue-100',
+                                                        'pending'    => 'bg-amber-50 text-amber-700 border border-amber-100',
+                                                        'paused'     => 'bg-gray-100 text-gray-600 border border-gray-200',
+                                                    ][$task->status] ?? 'bg-slate-50 text-slate-600';
+                                                    
+                                                    $statusLabel = [
+                                                        'completed'  => 'Completed',
+                                                        'in_progress'=> 'In Progress',
+                                                        'pending'    => 'Pending',
+                                                        'paused'     => 'Paused',
+                                                    ][$task->status] ?? $task->status;
+                                                @endphp
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $badgeClasses }}">
+                                                    {{ $statusLabel }}
                                                 </span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    
-                                    <td class="px-6 py-4 text-center">
-                                        @php
-                                            $badgeClasses = [
-                                                'completed'  => 'bg-green-50 text-green-700 border border-green-100',
-                                                'in_progress'=> 'bg-blue-50 text-blue-700 border border-blue-100',
-                                                'pending'    => 'bg-amber-50 text-amber-700 border border-amber-100',
-                                                'paused'     => 'bg-gray-100 text-gray-600 border border-gray-200',
-                                            ][$task->status] ?? 'bg-slate-50 text-slate-600';
-                                            
-                                            $statusLabel = [
-                                                'completed'  => 'Completed',
-                                                'in_progress'=> 'In Progress',
-                                                'pending'    => 'Pending',
-                                                'paused'     => 'Paused',
-                                            ][$task->status] ?? $task->status;
-                                        @endphp
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $badgeClasses }}">
-                                            {{ $statusLabel }}
-                                        </span>
-                                    </td>
-                                    
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center justify-center gap-1.5">
-                                            <button data-id="{{ $report->id }}" onclick="viewDetail(this.dataset.id)"
-                                                    title="View Full Report Details"
-                                                    class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                            </div>
+                                        </td>
+                                        
+                                        <td class="px-4 py-2 md:px-6 md:py-4 block md:table-cell">
+                                            <div class="flex items-center justify-start md:justify-center">
+                                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest md:hidden mr-2">Actions:</span>
+                                                <button data-id="{{ $report->id }}" onclick="viewDetail(this.dataset.id)"
+                                                        title="View Full Report Details"
+                                                        class="w-7 h-7 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
                             @endforeach
-                        @endforeach
                         @endforeach
                     </tbody>
                 </table>
