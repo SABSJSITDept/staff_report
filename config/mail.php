@@ -46,6 +46,17 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
+        'godaddy' => [
+            'transport' => 'smtp',
+            'host' => env('RATING_MAIL_HOST', 'smtpout.secureserver.net'),
+            'port' => env('RATING_MAIL_PORT', 465),
+            'encryption' => env('RATING_MAIL_ENCRYPTION', 'ssl'),
+            'username' => env('RATING_MAIL_USERNAME'),
+            'password' => env('RATING_MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN'),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

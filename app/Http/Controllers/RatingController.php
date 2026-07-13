@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RatingSubmittedMail;
 use App\Models\User;
 use App\Models\RatingCategory;
 use App\Models\RatingQuestion;
@@ -179,6 +181,10 @@ class RatingController extends Controller
             'overall_remark' => 'nullable|string'
         ]);
 
+        $ratingDetails = [];
+        $totalRating = 0;
+        $ratingCount = 0;
+
         foreach ($request->ratings as $question_id => $data) {
             $question = RatingQuestion::find($question_id);
             if ($question) {
@@ -191,8 +197,18 @@ class RatingController extends Controller
                     'financial_year' => $setting->financial_year ?? null,
                     'remark' => $data['remark'] ?? null,
                 ]);
+                $ratingDetails[] = [
+                    'question' => $question->question,
+                    'rating' => $data['rating'],
+                    'remark' => $data['remark'] ?? ''
+                ];
+                $totalRating += (int)$data['rating'];
+                $ratingCount++;
             }
         }
+
+        $averageRating = $ratingCount > 0 ? round($totalRating / $ratingCount, 2) : 0;
+        $raterName = $user->name;
 
         if ($request->filled('overall_remark')) {
             OverallRemark::create([
@@ -201,6 +217,21 @@ class RatingController extends Controller
                 'remark_given_by_id' => $user->id,
                 'financial_year' => $setting->financial_year ?? null,
             ]);
+        }
+        try {
+            \Log::info('Attempting to send email for rating for staff id: ' . $staff_id);
+            $staffMember = User::find($staff_id);
+            if ($staffMember) {
+                $overallRemark = $request->overall_remark ?? '';
+                Mail::mailer('godaddy')
+                    ->to('pst@sadhumargi.com')
+                    ->send(new RatingSubmittedMail($staffMember, $ratingDetails, $overallRemark, $raterName, $averageRating));
+                \Log::info('Rating email sent successfully to pst@sadhumargi.com');
+            } else {
+                \Log::warning('Staff member not found for id: ' . $staff_id);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to send rating email: ' . $e->getMessage());
         }
 
         return redirect()->route('ratings.index')->with('success', 'Rating submitted successfully for staff member.');
