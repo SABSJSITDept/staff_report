@@ -70,6 +70,16 @@
                     <p class="text-[10px] text-slate-400 font-medium ml-1">On this day, the bill will automatically generate.</p>
                 </div>
 
+                <!-- Billing Month (Yearly Only) -->
+                <div class="space-y-2" id="billingMonthContainer" style="display: none;">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Billing Month</label>
+                    <select name="billing_month" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-medium">
+                        @foreach(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as $index => $month)
+                            <option value="{{ $index + 1 }}" {{ old('billing_month') == ($index + 1) ? 'selected' : '' }}>{{ $month }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <!-- Amount -->
                 <div class="space-y-2">
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Amount</label>
@@ -105,3 +115,23 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const durationSelect = document.querySelector('select[name="duration_months"]');
+        const monthContainer = document.getElementById('billingMonthContainer');
+        
+        function toggleMonth() {
+            if (durationSelect.value == '12') {
+                monthContainer.style.display = 'block';
+            } else {
+                monthContainer.style.display = 'none';
+            }
+        }
+        
+        durationSelect.addEventListener('change', toggleMonth);
+        toggleMonth(); // Check on load
+    });
+</script>
+@endpush

@@ -35,14 +35,19 @@ class ItRechargeController extends Controller
 
         // Construct the initial bill date (find the next upcoming date)
         $now = now()->startOfDay();
-        $last_date = Carbon::create($now->year, $now->month, $request->billing_day)->startOfDay();
+        $billing_month = ($request->duration_months == 12 && $request->has('billing_month')) ? $request->billing_month : $now->month;
+        $last_date = Carbon::create($now->year, $billing_month, $request->billing_day)->startOfDay();
         
         // If the date has already passed this month/year, jump to the next cycle
         if ($last_date->lt($now)) {
-            $last_date->addMonths($request->duration_months);
+            if ($request->duration_months == 12) {
+                $last_date->addYear();
+            } else {
+                $last_date->addMonths($request->duration_months);
+            }
         }
         
-        $data = $request->except(['billing_day']);
+        $data = $request->except(['billing_day', 'billing_month']);
         $data['last_date'] = $last_date->format('Y-m-d');
 
         ItRecharge::create($data);
@@ -69,10 +74,10 @@ class ItRechargeController extends Controller
         ]);
 
         $billYear = $recharge->last_date->year;
-        $billMonth = $recharge->last_date->month;
+        $billMonth = ($request->duration_months == 12 && $request->has('billing_month')) ? $request->billing_month : $recharge->last_date->month;
         $last_date = Carbon::create($billYear, $billMonth, $request->billing_day);
         
-        $data = $request->except(['billing_day']);
+        $data = $request->except(['billing_day', 'billing_month']);
         $data['last_date'] = $last_date->format('Y-m-d');
 
         $recharge->update($data);
@@ -82,8 +87,9 @@ class ItRechargeController extends Controller
 
     public function destroy(ItRecharge $recharge)
     {
+        $recharge->payments()->delete(); // Cascade delete
         $recharge->delete();
-        return redirect()->route('it-management.recharges.index')->with('success', 'Recharge deleted successfully.');
+        return redirect()->route('it-management.recharges.index')->with('success', 'Recharge and its payment history deleted successfully.');
     }
 
     public function markPaid(Request $request, ItRecharge $recharge)
