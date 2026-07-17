@@ -140,8 +140,9 @@ class ItRechargeController extends Controller
             }
             fclose($handle);
 
-            // Do not extend next due date on bulk import, just log it.
-            return redirect()->route('it-management.recharges.index')->with('success', 'Bulk payment history uploaded successfully.');
+            $this->recalculateNextDueDate($recharge);
+
+            return redirect()->route('it-management.recharges.index')->with('success', 'Bulk payment history uploaded and upcoming bill date updated.');
         }
 
         // Standard single payment logic
@@ -157,23 +158,32 @@ class ItRechargeController extends Controller
             'notes' => $request->notes,
         ]);
 
-        if (!$request->has('is_past_payment')) {
-            // Extend the last_date by duration_months
-            $newDate = Carbon::parse($recharge->last_date)->addMonths($recharge->duration_months);
+        $recharge->update(['amount' => $request->amount_paid]);
+        $this->recalculateNextDueDate($recharge);
 
-            $recharge->update([
-                'last_date' => $newDate,
-                'amount' => $request->amount_paid, // Update amount to the latest one based on user requirement
-            ]);
-            $msg = 'Payment marked successfully and next due date updated.';
-        } else {
-            $recharge->update([
-                'amount' => $request->amount_paid,
-            ]);
-            $msg = 'Past payment logged successfully. Upcoming bill date was not changed.';
+        return redirect()->route('it-management.recharges.index')->with('success', 'Payment logged successfully and next due date updated based on history.');
+    }
+
+    private function recalculateNextDueDate(ItRecharge $recharge)
+    {
+        $latestPayment = $recharge->payments()->orderBy('paid_at', 'desc')->first();
+        if ($latestPayment) {
+            $paidDate = Carbon::parse($latestPayment->paid_at);
+            
+            // The next due date is exactly duration_months after the latest payment date
+            $nextDate = $paidDate->copy()->addMonths($recharge->duration_months);
+            
+            // We ensure it stays on the original billing day
+            $billingDay = Carbon::parse($recharge->last_date)->day;
+            if ($recharge->duration_months != 12) {
+                $nextDate->day($billingDay);
+            } else {
+                $billingMonth = Carbon::parse($recharge->last_date)->month;
+                $nextDate->month($billingMonth)->day($billingDay);
+            }
+            
+            $recharge->update(['last_date' => $nextDate->format('Y-m-d')]);
         }
-
-        return redirect()->route('it-management.recharges.index')->with('success', $msg);
     }
 
     public function close(ItRecharge $recharge)

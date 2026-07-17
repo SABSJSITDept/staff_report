@@ -155,13 +155,6 @@
                                                           class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-medium resize-none"></textarea>
                                             </div>
                                             
-                                            <div>
-                                                <label class="flex items-center gap-2 mt-1 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
-                                                    <input type="checkbox" name="is_past_payment" value="1" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                                                    <span class="text-xs font-semibold text-slate-700">This is a past/backdated payment (Do not advance the upcoming bill date)</span>
-                                                </label>
-                                            </div>
-
                                             <div class="relative py-2">
                                                 <div class="absolute inset-0 flex items-center" aria-hidden="true">
                                                     <div class="w-full border-t border-slate-200"></div>
