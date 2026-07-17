@@ -74,6 +74,14 @@ class StaffDashboardController extends Controller
         $featuredEmployee = $employeesOfTheMonth->first();
         $otherEmployees = $employeesOfTheMonth->slice(1);
 
+        // IT Pending Recharges Notification
+        $pendingRecharges = collect();
+        if (Auth::user()->canAccessIT()) {
+            $pendingRecharges = \App\Models\ItRecharge::where('last_date', '<=', now()->addDays(7))
+                                    ->orderBy('last_date')
+                                    ->get();
+        }
+
         // Keep variables for backward compatibility if needed, though we will use the new collections
         $isBirthday = $todaysBirthdays->contains('id', $staffDetail->id);
         $isAnniversary = $todaysAnniversaries->contains('id', $staffDetail->id);
@@ -91,7 +99,8 @@ class StaffDashboardController extends Controller
             'todaysBirthdays' => $todaysBirthdays,
             'todaysAnniversaries' => $todaysAnniversaries,
             'featuredEmployee' => $featuredEmployee,
-            'otherEmployees' => $otherEmployees
+            'otherEmployees' => $otherEmployees,
+            'pendingRecharges' => $pendingRecharges
         ]);
     }
 

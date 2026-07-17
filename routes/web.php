@@ -137,8 +137,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('pst')->name('pst.')->group(fu
     Route::get('/view', fn() => view('Pst.ViewPst'))->name('view');
 });
 
+// Temp migration route
+Route::get('/migrate-db', function() {
+    \Illuminate\Support\Facades\Artisan::call('migrate');
+    return \Illuminate\Support\Facades\Artisan::output();
+});
+
 // IT Management (IT Dept only)
 Route::middleware(['auth', 'role:IT DEPARTMENT'])->prefix('it-management')->name('it-management.')->group(function () {
+    Route::resource('recharges', \App\Http\Controllers\ItRechargeController::class);
+    Route::post('recharges/{recharge}/mark-paid', [\App\Http\Controllers\ItRechargeController::class, 'markPaid'])->name('recharges.mark-paid');
+    Route::get('recharges/{recharge}/history', [\App\Http\Controllers\ItRechargeController::class, 'history'])->name('recharges.history');
+
     Route::get('/backup-locations', [\App\Http\Controllers\ITManagementController::class, 'backupLocationsIndex'])->name('backup-locations.index');
     Route::post('/backup-locations', [\App\Http\Controllers\ITManagementController::class, 'backupLocationsStore'])->name('backup-locations.store');
     Route::delete('/backup-locations/{id}', [\App\Http\Controllers\ITManagementController::class, 'backupLocationsDestroy'])->name('backup-locations.destroy');
