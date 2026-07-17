@@ -89,10 +89,51 @@ class ItRechargeController extends Controller
     public function markPaid(Request $request, ItRecharge $recharge)
     {
         $request->validate([
-            'amount_paid' => 'required|numeric|min:0',
-            'paid_at' => 'required|date',
+            'amount_paid' => 'nullable|numeric|min:0',
+            'paid_at' => 'nullable|date',
             'notes' => 'nullable|string',
+            'payment_history_csv' => 'nullable|file|mimes:csv,txt|max:2048',
         ]);
+
+        if ($request->hasFile('payment_history_csv')) {
+            $file = $request->file('payment_history_csv');
+            $handle = fopen($file->path(), 'r');
+            $isFirstRow = true;
+            
+            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                if ($isFirstRow) {
+                    $isFirstRow = false;
+                    continue; // Skip header
+                }
+                
+                // Expected columns: Date, Amount, Notes
+                if (count($row) >= 2) {
+                    try {
+                        $date = Carbon::parse(trim($row[0]))->format('Y-m-d');
+                        $amount = (float) trim($row[1]);
+                        $notes = isset($row[2]) ? trim($row[2]) : null;
+
+                        ItRechargePayment::create([
+                            'it_recharge_id' => $recharge->id,
+                            'amount_paid' => $amount,
+                            'paid_at' => $date,
+                            'notes' => $notes,
+                        ]);
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+            }
+            fclose($handle);
+
+            // Do not extend next due date on bulk import, just log it.
+            return redirect()->route('it-management.recharges.index')->with('success', 'Bulk payment history uploaded successfully.');
+        }
+
+        // Standard single payment logic
+        if (!$request->amount_paid || !$request->paid_at) {
+            return back()->withErrors(['amount_paid' => 'Amount and date are required for a single payment.']);
+        }
 
         // Log the payment
         ItRechargePayment::create([
@@ -111,6 +152,12 @@ class ItRechargeController extends Controller
         ]);
 
         return redirect()->route('it-management.recharges.index')->with('success', 'Payment marked successfully and next due date updated.');
+    }
+
+    public function close(ItRecharge $recharge)
+    {
+        $recharge->update(['status' => 'closed']);
+        return redirect()->route('it-management.recharges.index')->with('success', 'Recharge marked as closed.');
     }
 
     public function history(ItRecharge $recharge)

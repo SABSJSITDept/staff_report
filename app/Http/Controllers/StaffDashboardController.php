@@ -78,6 +78,7 @@ class StaffDashboardController extends Controller
         $pendingRecharges = collect();
         if (Auth::user()->canAccessIT()) {
             $pendingRecharges = \App\Models\ItRecharge::where('last_date', '<=', now()->addDays(7))
+                                    ->where('status', '!=', 'closed')
                                     ->orderBy('last_date')
                                     ->get();
         }

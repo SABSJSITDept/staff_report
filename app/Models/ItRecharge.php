@@ -16,6 +16,7 @@ class ItRecharge extends Model
         'last_date',
         'amount',
         'payment_type',
+        'status',
         'mode',
         'details',
     ];

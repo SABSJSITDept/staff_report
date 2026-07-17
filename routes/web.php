@@ -148,6 +148,7 @@ Route::middleware(['auth', 'role:IT DEPARTMENT'])->prefix('it-management')->name
     Route::resource('recharges', \App\Http\Controllers\ItRechargeController::class);
     Route::post('recharges/{recharge}/mark-paid', [\App\Http\Controllers\ItRechargeController::class, 'markPaid'])->name('recharges.mark-paid');
     Route::get('recharges/{recharge}/history', [\App\Http\Controllers\ItRechargeController::class, 'history'])->name('recharges.history');
+    Route::post('recharges/{recharge}/close', [\App\Http\Controllers\ItRechargeController::class, 'close'])->name('recharges.close');
 
     Route::get('/backup-locations', [\App\Http\Controllers\ITManagementController::class, 'backupLocationsIndex'])->name('backup-locations.index');
     Route::post('/backup-locations', [\App\Http\Controllers\ITManagementController::class, 'backupLocationsStore'])->name('backup-locations.store');
