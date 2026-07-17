@@ -30,44 +30,124 @@
     </div>
 </div>
 
-{{-- Today's Status Banner --}}
-@if($isBirthday || $isAnniversary)
-<div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-    @if($isBirthday)
-    <div class="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-6 text-white shadow-lg shadow-rose-200 relative overflow-hidden">
-        <div class="relative z-10 flex items-center gap-5">
-            <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl shadow-inner">🎂</div>
-            <div>
-                <h3 class="font-bold text-xl">Happy Birthday, {{ Auth::user()->name }}!</h3>
-                <p class="text-rose-100 text-sm mt-1 leading-relaxed">
-                    On this special day, we celebrate you! Wishing you a fantastic day filled with joy, prosperity, and success. Thank you for being such an integral part of our team.
-                </p>
+{{-- Global Announcements & Employee of the Month --}}
+<div class="mb-6 flex flex-col gap-4">
+
+    {{-- Employee of the Month --}}
+    @if($featuredEmployee)
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between border border-indigo-500">
+        <div class="relative z-10 flex items-center gap-5 w-full">
+            @if($featuredEmployee->staff->photo)
+                <img src="{{ asset('storage/' . $featuredEmployee->staff->photo) }}" class="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover">
+            @else
+                <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner border-2 border-white/50">🏆</div>
+            @endif
+            <div class="flex-1">
+                @if($featuredEmployee->staff_id == $staffDetail->id)
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-yellow-900 text-xs font-extrabold rounded-full tracking-wider uppercase shadow-md mb-2">
+                        <span>🌟 Congratulations! You are the Star of {{ date('F', mktime(0, 0, 0, $featuredEmployee->month, 1)) }}! 🌟</span>
+                    </div>
+                    <h3 class="font-extrabold text-3xl mt-1 text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-100">Outstanding Work, {{ Auth::user()->name }}!</h3>
+                    <p class="text-indigo-50 text-sm mt-2 leading-relaxed max-w-2xl border-l-4 border-yellow-400 pl-3 italic">
+                        "{{ $featuredEmployee->description }}"
+                    </p>
+                @else
+                    <span class="px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-extrabold rounded-full tracking-wider uppercase shadow-sm">
+                        Employee of the Month - {{ date('F', mktime(0, 0, 0, $featuredEmployee->month, 1)) }}
+                    </span>
+                    <h3 class="font-bold text-2xl mt-2">{{ $featuredEmployee->staff->name }}</h3>
+                    <p class="text-indigo-100 text-sm mt-1 leading-relaxed max-w-2xl">
+                        "{{ $featuredEmployee->description }}"
+                    </p>
+                @endif
             </div>
         </div>
-        <div class="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 scale-150">
-            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M19 15v2h2v2h-2v2h-2v-2h-2v-2h2v-2h2zM7 9a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zm10-2a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zM7 17a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zm10-2a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8z"/></svg>
+        
+        {{-- Previous Winners for the Year --}}
+        @if($otherEmployees->count() > 0)
+        <div class="relative z-10 mt-6 md:mt-0 md:ml-6 pl-0 md:pl-6 border-t md:border-t-0 md:border-l border-white/20 w-full md:w-auto">
+            <h4 class="text-xs text-indigo-200 font-semibold uppercase tracking-wider mb-3">Other Winners in {{ now()->year }}</h4>
+            <div class="flex flex-col gap-2">
+                @foreach($otherEmployees as $other)
+                    <div class="flex items-center gap-3 bg-white/10 rounded-lg p-2 border border-white/10 hover:bg-white/20 transition">
+                        @if($other->staff->photo)
+                            <img src="{{ asset('storage/' . $other->staff->photo) }}" class="w-8 h-8 rounded-full object-cover">
+                        @else
+                            <div class="w-8 h-8 rounded-full bg-indigo-800 flex items-center justify-center text-xs">🏅</div>
+                        @endif
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold leading-tight">{{ $other->staff->name }}</span>
+                            <span class="text-[10px] text-indigo-200 uppercase">{{ date('M', mktime(0, 0, 0, $other->month, 1)) }}</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        <div class="absolute -right-10 -bottom-10 opacity-10 transform -rotate-12 scale-150 pointer-events-none">
+            <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
         </div>
     </div>
     @endif
 
-    @if($isAnniversary)
-    <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white shadow-lg shadow-orange-200 relative overflow-hidden">
-        <div class="relative z-10 flex items-center gap-5">
-            <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl shadow-inner">🎊</div>
-            <div>
-                <h3 class="font-bold text-xl">Happy Work Anniversary, {{ Auth::user()->name }}!</h3>
-                <p class="text-orange-100 text-sm mt-1 leading-relaxed">
-                    Congratulations on completing {{ $yearsOfService }} year(s) of excellence with us. Your hard work and dedication have been a vital part of our success. Here's to many more milestones together!
-                </p>
+    {{-- Global Birthdays & Anniversaries --}}
+    @if($todaysBirthdays->count() > 0 || $todaysAnniversaries->count() > 0)
+    <div class="grid grid-cols-1 {{ ($todaysBirthdays->count() > 0 && $todaysAnniversaries->count() > 0) ? 'md:grid-cols-2' : '' }} gap-4">
+        
+        @if($todaysBirthdays->count() > 0)
+        <div class="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl shadow-inner">🎂</div>
+                    <h3 class="font-bold text-lg">Today's Birthdays</h3>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    @foreach($todaysBirthdays as $bdayStaff)
+                        <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg py-1.5 px-3 border border-white/20">
+                            <span class="font-medium text-sm">{{ $bdayStaff->name }}</span>
+                            @if($bdayStaff->id === Auth::id())
+                                <span class="bg-white text-rose-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">You</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <div class="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 scale-150">
+                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M19 15v2h2v2h-2v2h-2v-2h-2v-2h2v-2h2zM7 9a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zm10-2a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zM7 17a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8zm10-2a2 2 0 100-4 2 2 0 000 4zm0 2a4 4 0 110-8 4 4 0 010 8z"/></svg>
             </div>
         </div>
-        <div class="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 scale-150">
-            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 11v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+        @endif
+
+        @if($todaysAnniversaries->count() > 0)
+        <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-xl shadow-inner">🎊</div>
+                    <h3 class="font-bold text-lg">Work Anniversaries</h3>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    @foreach($todaysAnniversaries as $anniStaff)
+                        <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-lg py-1.5 px-3 border border-white/20">
+                            <span class="font-medium text-sm">{{ $anniStaff->name }}</span>
+                            <span class="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">{{ $anniStaff->yearsOfService }} yr(s)</span>
+                            @if($anniStaff->id === Auth::id())
+                                <span class="bg-white text-orange-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">You</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <div class="absolute -right-6 -bottom-6 opacity-10 transform rotate-12 scale-150">
+                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45l8.27 14.3H3.73L12 5.45zM11 11v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+            </div>
         </div>
+        @endif
+
     </div>
     @endif
+
 </div>
-@endif
 
 
 @php

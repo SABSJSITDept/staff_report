@@ -44,25 +44,40 @@ class StaffDashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // Calculate Special Occasions
-        $isBirthday = false;
-        $isAnniversary = false;
-        $yearsOfService = 0;
+        // Calculate Global Special Occasions (All Staff)
+        $today = now()->format('m-d');
+        
+        $todaysBirthdays = StaffModel::where('status', 'Active')
+            ->whereNotNull('dob')
+            ->get()
+            ->filter(function($staff) use ($today) {
+                return \Carbon\Carbon::parse($staff->dob)->format('m-d') === $today;
+            });
 
-        if ($staffDetail->dob) {
-            $dob = \Carbon\Carbon::parse($staffDetail->dob);
-            if ($dob->isBirthday()) {
-                $isBirthday = true;
-            }
-        }
+        $todaysAnniversaries = StaffModel::where('status', 'Active')
+            ->whereNotNull('doj')
+            ->get()
+            ->filter(function($staff) use ($today) {
+                return \Carbon\Carbon::parse($staff->doj)->format('m-d') === $today;
+            })->map(function($staff) {
+                $staff->yearsOfService = \Carbon\Carbon::parse($staff->doj)->diffInYears(now());
+                return $staff;
+            });
 
-        if ($staffDetail->doj) {
-            $doj = \Carbon\Carbon::parse($staffDetail->doj);
-            if ($doj->format('m-d') === now()->format('m-d')) {
-                $isAnniversary = true;
-                $yearsOfService = $doj->diffInYears(now());
-            }
-        }
+        // Fetch all Employee of the Month records for this office in the current year
+        $employeesOfTheMonth = \App\Models\EmployeeOfTheMonth::with('staff')
+            ->where('office_id', $staffDetail->office_id)
+            ->where('year', now()->year)
+            ->orderByDesc('month')
+            ->get();
+        
+        $featuredEmployee = $employeesOfTheMonth->first();
+        $otherEmployees = $employeesOfTheMonth->slice(1);
+
+        // Keep variables for backward compatibility if needed, though we will use the new collections
+        $isBirthday = $todaysBirthdays->contains('id', $staffDetail->id);
+        $isAnniversary = $todaysAnniversaries->contains('id', $staffDetail->id);
+        $yearsOfService = $isAnniversary ? $todaysAnniversaries->firstWhere('id', $staffDetail->id)->yearsOfService : 0;
 
         return view('Staff.dashboard', [
             'staffDetail' => $staffDetail,
@@ -72,7 +87,11 @@ class StaffDashboardController extends Controller
             'profileRequests' => $profileRequests,
             'isBirthday' => $isBirthday,
             'isAnniversary' => $isAnniversary,
-            'yearsOfService' => $yearsOfService
+            'yearsOfService' => $yearsOfService,
+            'todaysBirthdays' => $todaysBirthdays,
+            'todaysAnniversaries' => $todaysAnniversaries,
+            'featuredEmployee' => $featuredEmployee,
+            'otherEmployees' => $otherEmployees
         ]);
     }
 

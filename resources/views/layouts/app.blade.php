@@ -99,6 +99,7 @@
                             <div class="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Structure</div>
                             <a href="{{ route('office.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Offices</a>
                             <a href="{{ route('department.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Departments</a>
+                            <a href="{{ route('admin.employee-of-month.index') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Emp of the Month</a>
                             
                             <div class="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1 border-t border-gray-50 pt-2">Roles</div>
                             <a href="{{ route('sanyojak.view') }}" class="block px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition">Sanyojaks</a>

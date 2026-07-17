@@ -56,6 +56,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/category/{id}', [\App\Http\Controllers\Admin\RatingConfigController::class, 'deleteCategory'])->name('category.delete');
         Route::delete('/question/{id}', [\App\Http\Controllers\Admin\RatingConfigController::class, 'deleteQuestion'])->name('question.delete');
     });
+
+    // Employee of the Month routes
+    Route::prefix('employee-of-month')->name('employee-of-month.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\EmployeeOfTheMonthController::class, 'index'])->name('index');
+        Route::post('/store', [\App\Http\Controllers\Admin\EmployeeOfTheMonthController::class, 'store'])->name('store');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\EmployeeOfTheMonthController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // Manager routes

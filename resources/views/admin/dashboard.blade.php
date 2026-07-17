@@ -16,6 +16,13 @@
     </form>
 </div>
 
+<div class="mb-6 flex gap-4">
+    <a href="{{ route('admin.employee-of-month.index') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm flex items-center gap-2 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Manage Employee of the Month
+    </a>
+</div>
+
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     <div class="bg-white rounded-xl shadow p-6 border-l-4 border-indigo-500">
         <p class="text-sm text-gray-500">Total Users</p>
