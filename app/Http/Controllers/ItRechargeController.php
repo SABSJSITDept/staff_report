@@ -151,15 +151,23 @@ class ItRechargeController extends Controller
             'notes' => $request->notes,
         ]);
 
-        // Extend the last_date by duration_months
-        $newDate = Carbon::parse($recharge->last_date)->addMonths($recharge->duration_months);
+        if (!$request->has('is_past_payment')) {
+            // Extend the last_date by duration_months
+            $newDate = Carbon::parse($recharge->last_date)->addMonths($recharge->duration_months);
 
-        $recharge->update([
-            'last_date' => $newDate,
-            'amount' => $request->amount_paid, // Update amount to the latest one based on user requirement
-        ]);
+            $recharge->update([
+                'last_date' => $newDate,
+                'amount' => $request->amount_paid, // Update amount to the latest one based on user requirement
+            ]);
+            $msg = 'Payment marked successfully and next due date updated.';
+        } else {
+            $recharge->update([
+                'amount' => $request->amount_paid,
+            ]);
+            $msg = 'Past payment logged successfully. Upcoming bill date was not changed.';
+        }
 
-        return redirect()->route('it-management.recharges.index')->with('success', 'Payment marked successfully and next due date updated.');
+        return redirect()->route('it-management.recharges.index')->with('success', $msg);
     }
 
     public function close(ItRecharge $recharge)
