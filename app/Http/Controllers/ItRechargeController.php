@@ -109,7 +109,15 @@ class ItRechargeController extends Controller
                 // Expected columns: Date, Amount, Notes
                 if (count($row) >= 2) {
                     try {
-                        $date = Carbon::parse(trim($row[0]))->format('Y-m-d');
+                        $rawDate = str_replace('/', '-', trim($row[0]));
+                        if (preg_match('/^\d{1,2}-\d{1,2}-\d{2}$/', $rawDate)) {
+                            $date = Carbon::createFromFormat('d-m-y', $rawDate)->format('Y-m-d');
+                        } elseif (preg_match('/^\d{1,2}-\d{1,2}-\d{4}$/', $rawDate)) {
+                            $date = Carbon::createFromFormat('d-m-Y', $rawDate)->format('Y-m-d');
+                        } else {
+                            $date = Carbon::parse($rawDate)->format('Y-m-d');
+                        }
+
                         $amount = (float) trim($row[1]);
                         $notes = isset($row[2]) ? trim($row[2]) : null;
 

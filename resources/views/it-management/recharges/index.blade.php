@@ -168,7 +168,7 @@
                                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Upload Payment History (.csv)</label>
                                                 <input type="file" name="payment_history_csv" accept=".csv"
                                                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition border border-slate-200 rounded-xl bg-slate-50">
-                                                <p class="text-[10px] text-slate-400 mt-1">Format: Date (YYYY-MM-DD), Amount, Notes. This overrides single payment fields above.</p>
+                                                <p class="text-[10px] text-slate-400 mt-1">Format: Date (DD-MM-YY or DD-MM-YYYY), Amount, Notes. This overrides single payment fields above.</p>
                                             </div>
                                         </div>
                                         
