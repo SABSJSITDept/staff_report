@@ -23,6 +23,9 @@
     </a>
 </div>
 
+@include('partials.occasions')
+
+
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     <div class="bg-white rounded-xl shadow p-6 border-l-4 border-indigo-500">
         <p class="text-sm text-gray-500">Total Users</p>

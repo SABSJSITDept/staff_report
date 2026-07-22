@@ -7,6 +7,8 @@
     <p class="text-gray-500 text-sm mt-1">Apni team ke daily reports yahan dekhen.</p>
 </div>
 
+@include('partials.occasions')
+
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
     <div class="bg-white rounded-xl shadow p-6 border-l-4 border-green-500">
         <p class="text-sm text-gray-500">Team Members (Staff)</p>
