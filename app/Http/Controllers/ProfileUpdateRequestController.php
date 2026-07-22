@@ -65,14 +65,8 @@ class ProfileUpdateRequestController extends Controller
         $data = array_filter($request->only('name', 'f_name', 'dob', 'mobile', 'email', 'doj', 'address'));
 
         if ($request->hasFile('photo')) {
-            $image = $request->file('photo');
-            $name = time().'_'.$user->id.'.'.$image->getClientOriginalExtension();
-            $destinationPath = public_path('/profile_photos/requests');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0777, true);
-            }
-            $image->move($destinationPath, $name);
-            $data['photo'] = 'profile_photos/requests/'.$name;
+            $path = $request->file('photo')->store('staff_photos/requests', 'public');
+            $data['photo'] = $path;
         }
 
         if (empty($data)) {
@@ -124,14 +118,15 @@ class ProfileUpdateRequestController extends Controller
             if (isset($data['address'])) $staffUpdate['address'] = strtoupper($data['address']);
             
             if (isset($data['photo'])) {
-                // Move from requests to final destination if needed, or just update
-                $oldPath = public_path($data['photo']);
-                $newName = basename($data['photo']);
-                $newPath = public_path('profile_photos/'.$newName);
+                $oldPath = $data['photo'];
+                $newName = basename($oldPath);
+                $newPath = 'staff_photos/'.$newName;
                 
-                if (file_exists($oldPath)) {
-                    rename($oldPath, $newPath);
-                    $staffUpdate['photo'] = 'profile_photos/'.$newName;
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->move($oldPath, $newPath);
+                    $staffUpdate['photo'] = $newPath;
+                } else {
+                    $staffUpdate['photo'] = $oldPath;
                 }
             }
 
