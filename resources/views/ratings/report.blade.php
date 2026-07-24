@@ -17,21 +17,25 @@
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Staff Rating Reports</h2>
-            <p class="text-sm text-gray-500 mt-1">View ratings given to staff members.</p>
+            @if(request()->filled('office_id'))
+                @php
+                    $selectedOffice = $offices->firstWhere('id', request('office_id'));
+                @endphp
+                <p class="text-sm text-gray-500 mt-1">Viewing reports for office: <span class="font-bold text-indigo-600">{{ $selectedOffice->name ?? '' }}</span></p>
+            @else
+                <p class="text-sm text-gray-500 mt-1">Select an office below to view reports.</p>
+            @endif
         </div>
         
         <div class="flex items-center gap-3 flex-wrap">
-            <form method="GET" action="{{ route('ratings.report') }}" class="flex gap-2">
-                <select name="office_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white" onchange="this.form.submit()">
-                    <option value="" disabled {{ !request()->filled('office_id') ? 'selected' : '' }}>Select Office...</option>
-                    @foreach($offices as $office)
-                        <option value="{{ $office->id }}" {{ request('office_id') == $office->id ? 'selected' : '' }}>
-                            {{ $office->name }}
-                        </option>
-                    @endforeach
-                </select>
+            @if(request()->filled('office_id'))
+                <a href="{{ route('ratings.report') }}" class="inline-flex items-center px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-sm transition shadow-sm gap-1.5">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Back to Offices
+                </a>
 
-                @if(request()->filled('office_id'))
+                <form method="GET" action="{{ route('ratings.report') }}" class="flex gap-2">
+                    <input type="hidden" name="office_id" value="{{ request('office_id') }}">
                     <select name="staff_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white" onchange="this.form.submit()">
                         <option value="">All Staff</option>
                         @foreach($allStaff as $staff)
@@ -43,10 +47,8 @@
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm">
                         Filter
                     </button>
-                @endif
-            </form>
+                </form>
 
-            @if(request()->filled('office_id'))
                 <a href="{{ route('ratings.report.export-excel', ['staff_id' => request('staff_id'), 'office_id' => request('office_id')]) }}" class="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     Export Excel
@@ -57,14 +59,20 @@
 
     {{-- Ratings Reports --}}
     @if(!request()->filled('office_id'))
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-12 text-center max-w-2xl mx-auto my-8">
-            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+        <div class="my-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                @foreach($offices as $office)
+                    <a href="{{ route('ratings.report', ['office_id' => $office->id]) }}" class="group bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:border-indigo-500 hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px]">
+                        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors duration-300 text-base leading-snug">{{ $office->name }}</h4>
+                        <span class="text-xs text-slate-400 mt-2 bg-slate-50 px-3 py-1 rounded-full group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors duration-300 font-semibold uppercase tracking-wider">View Reports</span>
+                    </a>
+                @endforeach
             </div>
-            <h3 class="text-xl font-bold text-slate-800">Select an Office First</h3>
-            <p class="text-slate-500 mt-2">Please select an office from the dropdown above to view the rating reports.</p>
         </div>
     @else
     @forelse($groupedData as $staffId => $staffData)
