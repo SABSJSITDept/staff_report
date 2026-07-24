@@ -23,7 +23,7 @@
         <div class="flex items-center gap-3 flex-wrap">
             <form method="GET" action="{{ route('ratings.report') }}" class="flex gap-2">
                 <select name="office_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white" onchange="this.form.submit()">
-                    <option value="">All Offices</option>
+                    <option value="" disabled {{ !request()->filled('office_id') ? 'selected' : '' }}>Select Office...</option>
                     @foreach($offices as $office)
                         <option value="{{ $office->id }}" {{ request('office_id') == $office->id ? 'selected' : '' }}>
                             {{ $office->name }}
@@ -31,23 +31,27 @@
                     @endforeach
                 </select>
 
-                <select name="staff_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white">
-                    <option value="">All Staff</option>
-                    @foreach($allStaff as $staff)
-                        <option value="{{ $staff->id }}" {{ request('staff_id') == $staff->id ? 'selected' : '' }}>
-                            {{ $staff->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm">
-                    Filter
-                </button>
+                @if(request()->filled('office_id'))
+                    <select name="staff_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white" onchange="this.form.submit()">
+                        <option value="">All Staff</option>
+                        @foreach($allStaff as $staff)
+                            <option value="{{ $staff->id }}" {{ request('staff_id') == $staff->id ? 'selected' : '' }}>
+                                {{ $staff->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm">
+                        Filter
+                    </button>
+                @endif
             </form>
 
-            <a href="{{ route('ratings.report.export-excel', ['staff_id' => request('staff_id'), 'office_id' => request('office_id')]) }}" class="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                Export Excel
-            </a>
+            @if(request()->filled('office_id'))
+                <a href="{{ route('ratings.report.export-excel', ['staff_id' => request('staff_id'), 'office_id' => request('office_id')]) }}" class="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    Export Excel
+                </a>
+            @endif
         </div>
     </div>
 
@@ -133,14 +137,18 @@
                                 @php
                                     $sum = 0;
                                     $count = 0;
-                                @endphp
-                                @foreach($staffData['raters'] as $rater)
-                                    @php
+                                    foreach($staffData['raters'] as $rater) {
                                         $r = $qData['ratings_by_rater'][$rater] ?? null;
                                         if ($r) {
                                             $sum += $r['rating'];
                                             $count++;
                                         }
+                                    }
+                                @endphp
+
+                                @foreach($staffData['raters'] as $rater)
+                                    @php
+                                        $r = $qData['ratings_by_rater'][$rater] ?? null;
                                     @endphp
                                     <td class="px-4 py-3 border-r border-gray-200 text-center font-bold {{ $r ? 'text-indigo-600' : 'text-gray-300' }}">
                                         {{ $r ? $r['rating'] : '-' }}
@@ -154,35 +162,36 @@
                                     {{ $count > 0 ? round($sum / $count, 1) : '-' }}
                                 </td>
                             </tr>
-                            @php $isFirstQuestionInCategory = false; @endphp
+                                @php $isFirstQuestionInCategory = false; @endphp
+                            @endforeach
                         @endforeach
-                    @endforeach
-                    
-                    {{-- Overall Average Row --}}
-                    <tr class="bg-green-50/50 border-t-2 border-green-100">
-                        @php
-                            $cols = 2 + (count($staffData['raters']) * 2);
-                        @endphp
-                        <td colspan="{{ $cols }}" class="px-4 py-4 text-right font-bold text-gray-700 uppercase tracking-widest text-xs">
-                            Overall Average Rating (out of 5):
-                        </td>
-                        <td class="px-4 py-4 text-center font-bold text-green-700 text-lg bg-green-100/50">
-                            {{ $overallAvg }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        
+                        {{-- Overall Average Row --}}
+                        <tr class="bg-green-50/50 border-t-2 border-green-100">
+                            @php
+                                $cols = 2 + (count($staffData['raters']) * 2);
+                            @endphp
+                            <td colspan="{{ $cols }}" class="px-4 py-4 text-right font-bold text-gray-700 uppercase tracking-widest text-xs">
+                                Overall Average Rating (out of 5):
+                            </td>
+                            <td class="px-4 py-4 text-center font-bold text-green-700 text-lg bg-green-100/50">
+                                {{ $overallAvg }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-    @empty
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        @empty
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800">No Ratings Found</h3>
+            <p class="text-sm text-gray-500 mt-1">There are no ratings available for the selected filters.</p>
         </div>
-        <h3 class="text-lg font-bold text-gray-800">No Ratings Found</h3>
-        <p class="text-sm text-gray-500 mt-1">There are no ratings available for the selected filters.</p>
-    </div>
-    @endforelse
+        @endforelse
+    @endif
 </div>
 
 @endsection

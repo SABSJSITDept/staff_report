@@ -275,16 +275,24 @@ class RatingController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        $groupedData = $this->getReportData($request);
-        
-        $staffQuery = User::where('role', 'staff');
-        if ($request->filled('office_id')) {
-            $officeId = $request->office_id;
-            $staffQuery->whereHas('staff', function($q) use ($officeId) {
-                $q->where('office_id', $officeId);
-            });
+        $officeSelected = $request->filled('office_id');
+
+        if (!$officeSelected) {
+            $groupedData = [];
+            $allStaff = collect();
+        } else {
+            $groupedData = $this->getReportData($request);
+            
+            $staffQuery = User::where('role', 'staff');
+            if ($request->filled('office_id')) {
+                $officeId = $request->office_id;
+                $staffQuery->whereHas('staff', function($q) use ($officeId) {
+                    $q->where('office_id', $officeId);
+                });
+            }
+            $allStaff = $staffQuery->get();
         }
-        $allStaff = $staffQuery->get();
+
         $offices = OfficeModel::orderBy('name')->get();
 
         return view('ratings.report', compact('groupedData', 'allStaff', 'offices'));
@@ -295,6 +303,10 @@ class RatingController extends Controller
         $user = auth()->user();
         if (!$user->isPst()) {
             abort(403, 'Unauthorized access.');
+        }
+
+        if (!$request->filled('office_id')) {
+            return back()->with('error', 'Please select an office first.');
         }
 
         $groupedData = $this->getReportData($request);
