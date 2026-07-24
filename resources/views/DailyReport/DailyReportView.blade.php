@@ -60,7 +60,7 @@
 </div>
 
 {{-- Employee of the Month --}}
-@if(in_array(Auth::user()->role, ['sanyojak', 'karyalay_sanyojak']) && isset($featuredEmployee) && $featuredEmployee)
+@if(isset($featuredEmployee) && $featuredEmployee)
 <div class="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between border border-indigo-500">
     <div class="relative z-10 flex items-center gap-5 w-full">
         @if($featuredEmployee->staff && $featuredEmployee->staff->photo)

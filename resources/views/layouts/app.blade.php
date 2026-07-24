@@ -645,7 +645,7 @@
                     dropdown.classList.add('hidden');
                 }
             });
-        });
+        }); 
 
         document.getElementById('global-change-password-form')?.addEventListener('submit', function(e) {
             e.preventDefault();
