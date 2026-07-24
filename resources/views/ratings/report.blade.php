@@ -56,6 +56,17 @@
     </div>
 
     {{-- Ratings Reports --}}
+    @if(!request()->filled('office_id'))
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-12 text-center max-w-2xl mx-auto my-8">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800">Select an Office First</h3>
+            <p class="text-slate-500 mt-2">Please select an office from the dropdown above to view the rating reports.</p>
+        </div>
+    @else
     @forelse($groupedData as $staffId => $staffData)
     @php
         $totalStaffSum = 0;
