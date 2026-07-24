@@ -11,27 +11,33 @@
         </div>
         
         <form action="{{ route('ratings.index') }}" method="GET" class="flex flex-col sm:flex-row gap-3">
+            @if($showOfficeSelectionFirst && request()->filled('office_id'))
+                <a href="{{ route('ratings.index') }}" class="inline-flex items-center px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-xl text-sm transition shadow-sm gap-1.5">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Back to Offices
+                </a>
+                <input type="hidden" name="office_id" value="{{ request('office_id') }}">
+            @endif
+
             @if(!$showOfficeSelectionFirst || request()->filled('office_id'))
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name or email..." class="pl-10 w-full sm:w-64 rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white py-2 transition-colors">
                 </div>
             @endif
             
-            <select name="office_id" id="office_id_select" class="rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white py-2 px-3 transition-colors" onchange="this.form.submit()">
-                @if($showOfficeSelectionFirst)
-                    <option value="" disabled {{ !request()->filled('office_id') ? 'selected' : '' }}>Select Office...</option>
-                @else
+            @if(!$showOfficeSelectionFirst)
+                <select name="office_id" id="office_id_select" class="rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white py-2 px-3 transition-colors" onchange="this.form.submit()">
                     <option value="">All Offices</option>
-                @endif
-                @foreach($offices as $office)
-                    <option value="{{ $office->id }}" {{ request('office_id') == $office->id ? 'selected' : '' }}>
-                        {{ $office->name }}
-                    </option>
-                @endforeach
-            </select>
+                    @foreach($offices as $office)
+                        <option value="{{ $office->id }}" {{ request('office_id') == $office->id ? 'selected' : '' }}>
+                            {{ $office->name }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
 
             @if(!$showOfficeSelectionFirst || request()->filled('office_id'))
                 <select name="staff_id" id="staff_id_select" class="rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-white py-2 px-3 transition-colors">
@@ -87,14 +93,21 @@
     @endif
 
     @if($showOfficeSelectionFirst && !request()->filled('office_id'))
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-12 text-center max-w-2xl mx-auto my-8">
-            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+        <div class="my-8 max-w-7xl mx-auto">
+            <h3 class="text-xl font-bold text-slate-800 text-center mb-6">Select an Office to View & Rate Staff</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                @foreach($offices as $office)
+                    <a href="{{ route('ratings.index', ['office_id' => $office->id]) }}" class="group bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:border-indigo-500 hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px]">
+                        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <h4 class="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors duration-300 text-base leading-snug">{{ $office->name }}</h4>
+                        <span class="text-xs text-slate-400 mt-2 bg-slate-50 px-3 py-1 rounded-full group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors duration-300 font-semibold uppercase tracking-wider">Select Office</span>
+                    </a>
+                @endforeach
             </div>
-            <h3 class="text-xl font-bold text-slate-800">Select an Office First</h3>
-            <p class="text-slate-500 mt-2">Please select an office from the dropdown above to view its staff members and rate their performance.</p>
         </div>
     @else
         {{-- Mobile Card Layout --}}
