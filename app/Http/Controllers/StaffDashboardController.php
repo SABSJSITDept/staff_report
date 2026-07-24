@@ -64,16 +64,6 @@ class StaffDashboardController extends Controller
                 return $staff;
             });
 
-        // Fetch all Employee of the Month records for this office in the current year
-        $employeesOfTheMonth = \App\Models\EmployeeOfTheMonth::with('staff')
-            ->where('office_id', $staffDetail->office_id)
-            ->where('year', now()->year)
-            ->orderByDesc('month')
-            ->get();
-        
-        $featuredEmployee = $employeesOfTheMonth->first();
-        $otherEmployees = $employeesOfTheMonth->slice(1);
-
         // IT Pending Recharges Notification
         $pendingRecharges = collect();
         if (Auth::user()->canAccessIT()) {
@@ -99,8 +89,6 @@ class StaffDashboardController extends Controller
             'yearsOfService' => $yearsOfService,
             'todaysBirthdays' => $todaysBirthdays,
             'todaysAnniversaries' => $todaysAnniversaries,
-            'featuredEmployee' => $featuredEmployee,
-            'otherEmployees' => $otherEmployees,
             'pendingRecharges' => $pendingRecharges
         ]);
     }

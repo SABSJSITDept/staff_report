@@ -10,6 +10,8 @@
     <span class="text-gray-600">Rating Reports</span>
 </nav>
 
+@include('partials.employee_of_the_month')
+
 <div class="space-y-6 max-w-7xl mx-auto">
     {{-- Header & Filter --}}
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">

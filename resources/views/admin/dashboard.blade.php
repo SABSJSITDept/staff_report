@@ -23,6 +23,8 @@
     </a>
 </div>
 
+@include('partials.employee_of_the_month')
+
 @include('partials.occasions')
 
 

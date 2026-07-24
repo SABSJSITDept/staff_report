@@ -152,26 +152,6 @@ class DailyReportController extends Controller
             $offices = \App\Models\Office\OfficeModel::orderBy('name')->get();
         }
 
-        $featuredEmployee = null;
-        $otherEmployees = collect();
-
-        $employeesQuery = \App\Models\EmployeeOfTheMonth::with(['staff', 'office'])
-            ->where('year', now()->year);
-
-        if ($user->role === 'sanyojak') {
-            $sanyojak = $user->sanyojak;
-            $assignedStaffIds = $sanyojak && $sanyojak->staff_assigned ? (is_string($sanyojak->staff_assigned) ? json_decode($sanyojak->staff_assigned, true) : (array)$sanyojak->staff_assigned) : [];
-            $officeIds = \App\Models\Staff\StaffModel::whereIn('id', $assignedStaffIds)->pluck('office_id')->unique()->toArray();
-            $employeesQuery->whereIn('office_id', $officeIds ?: [0]);
-        } elseif ($user->role === 'staff' && $user->staff) {
-            $employeesQuery->where('office_id', $user->staff->office_id);
-        }
-
-        $employeesOfTheMonth = $employeesQuery->orderByDesc('month')->get();
-        
-        $featuredEmployee = $employeesOfTheMonth->first();
-        $otherEmployees = $employeesOfTheMonth->slice(1);
-
         return view('DailyReport.DailyReportView', compact(
             'reports', 
             'allStaff',
@@ -179,9 +159,7 @@ class DailyReportController extends Controller
             'totalReports', 
             'todayReports', 
             'totalTasks', 
-            'completionRate',
-            'featuredEmployee',
-            'otherEmployees'
+            'completionRate'
         ));
     }
 

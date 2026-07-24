@@ -7,6 +7,8 @@
     <p class="text-gray-500 text-sm mt-1">Apni team ke daily reports yahan dekhen.</p>
 </div>
 
+@include('partials.employee_of_the_month')
+
 @include('partials.occasions')
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
