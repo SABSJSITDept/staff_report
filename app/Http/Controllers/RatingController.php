@@ -55,35 +55,66 @@ class RatingController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Apply Office Filter first so it affects the Staff dropdown
-        if ($request->filled('office_id')) {
-            $officeId = $request->office_id;
-            $query->whereHas('staff', function($q) use ($officeId) {
-                $q->where('office_id', $officeId);
-            });
+        $showOfficeSelectionFirst = false;
+        $uniqueOfficeIds = [];
+
+        if ($user->isAdmin() || $user->isKaryalaySanyojak()) {
+            $showOfficeSelectionFirst = true;
+            $offices = OfficeModel::orderBy('name')->get();
+        } elseif ($user->isSanyojak()) {
+            $sanyojak = $user->sanyojak;
+            $staffAssignedIds = $sanyojak ? ($sanyojak->staff_assigned ?? []) : [];
+            if (is_string($staffAssignedIds)) {
+                $staffAssignedIds = json_decode($staffAssignedIds, true);
+            }
+            $uniqueOfficeIds = StaffModel::whereIn('id', $staffAssignedIds ?: [0])
+                ->pluck('office_id')
+                ->unique()
+                ->filter()
+                ->toArray();
+            
+            if (count($uniqueOfficeIds) > 1) {
+                $showOfficeSelectionFirst = true;
+            }
+            $offices = OfficeModel::whereIn('id', $uniqueOfficeIds ?: [0])->orderBy('name')->get();
+        } else {
+            $offices = collect();
         }
 
-        // Clone the base query to get eligible staff for the dropdown (filtered by office if selected)
-        $allStaff = (clone $query)->with('staff')->get();
+        $officeSelected = $request->filled('office_id');
 
-        // Apply Search
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
+        if ($showOfficeSelectionFirst && !$officeSelected) {
+            $staff = collect();
+            $allStaff = collect();
+        } else {
+            if ($officeSelected) {
+                $officeId = $request->office_id;
+                $query->whereHas('staff', function($q) use ($officeId) {
+                    $q->where('office_id', $officeId);
+                });
+            }
+
+            // Clone the base query to get eligible staff for the dropdown (filtered by office if selected)
+            $allStaff = (clone $query)->with('staff')->get();
+
+            // Apply Search
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            // Apply Staff Name Dropdown Filter
+            if ($request->filled('staff_id')) {
+                $query->where('id', $request->staff_id);
+            }
+
+            $staff = $query->with('staff.office', 'staff.department')->get();
         }
 
-        // Apply Staff Name Dropdown Filter
-        if ($request->filled('staff_id')) {
-            $query->where('id', $request->staff_id);
-        }
-
-        $staff = $query->get();
-        $offices = OfficeModel::all();
-
-        return view('ratings.index', compact('staff', 'allStaff', 'offices'));
+        return view('ratings.index', compact('staff', 'allStaff', 'offices', 'showOfficeSelectionFirst'));
     }
 
     public function create($staff_id)
@@ -245,9 +276,18 @@ class RatingController extends Controller
         }
 
         $groupedData = $this->getReportData($request);
-        $allStaff = User::where('role', 'staff')->get();
+        
+        $staffQuery = User::where('role', 'staff');
+        if ($request->filled('office_id')) {
+            $officeId = $request->office_id;
+            $staffQuery->whereHas('staff', function($q) use ($officeId) {
+                $q->where('office_id', $officeId);
+            });
+        }
+        $allStaff = $staffQuery->get();
+        $offices = OfficeModel::orderBy('name')->get();
 
-        return view('ratings.report', compact('groupedData', 'allStaff'));
+        return view('ratings.report', compact('groupedData', 'allStaff', 'offices'));
     }
 
     public function exportExcel(Request $request)
@@ -269,12 +309,25 @@ class RatingController extends Controller
         if ($request->filled('staff_id')) {
             $query->where('staff_id', $request->staff_id);
         }
+        
+        if ($request->filled('office_id')) {
+            $officeId = $request->office_id;
+            $query->whereHas('staff.staff', function($q) use ($officeId) {
+                $q->where('office_id', $officeId);
+            });
+        }
 
         $ratings = $query->orderBy('created_at', 'asc')->get();
 
         $remarksQuery = OverallRemark::with(['staff', 'remarkGivenBy']);
         if ($request->filled('staff_id')) {
             $remarksQuery->where('staff_id', $request->staff_id);
+        }
+        if ($request->filled('office_id')) {
+            $officeId = $request->office_id;
+            $remarksQuery->whereHas('staff.staff', function($q) use ($officeId) {
+                $q->where('office_id', $officeId);
+            });
         }
         $overallRemarks = $remarksQuery->orderBy('created_at', 'desc')->get()->groupBy('staff_id')->map(function($items) {
             return $items->map(function($item) {

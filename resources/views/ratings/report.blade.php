@@ -22,6 +22,15 @@
         
         <div class="flex items-center gap-3 flex-wrap">
             <form method="GET" action="{{ route('ratings.report') }}" class="flex gap-2">
+                <select name="office_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white" onchange="this.form.submit()">
+                    <option value="">All Offices</option>
+                    @foreach($offices as $office)
+                        <option value="{{ $office->id }}" {{ request('office_id') == $office->id ? 'selected' : '' }}>
+                            {{ $office->name }}
+                        </option>
+                    @endforeach
+                </select>
+
                 <select name="staff_id" class="form-input-modern border border-gray-200 rounded-xl px-4 py-2 text-sm text-gray-700 bg-white">
                     <option value="">All Staff</option>
                     @foreach($allStaff as $staff)
@@ -35,7 +44,7 @@
                 </button>
             </form>
 
-            <a href="{{ route('ratings.report.export-excel', ['staff_id' => request('staff_id')]) }}" class="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
+            <a href="{{ route('ratings.report.export-excel', ['staff_id' => request('staff_id'), 'office_id' => request('office_id')]) }}" class="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Export Excel
             </a>
