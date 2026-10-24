@@ -64,6 +64,7 @@
         <thead>
             <tr>
                 <th>Staff Name</th>
+                <th>Office</th>
                 <th>Department</th>
                 <th>Consecutive Days Missed</th>
                 <th>Recent Backup Dates</th>
@@ -76,6 +77,7 @@
                         <strong>{{ $defaulter['staff']->name }}</strong><br>
                         <span style="font-size: 10px; color: #666;">{{ $defaulter['staff']->email }}</span>
                     </td>
+                    <td>{{ $defaulter['staff']->office->name ?? 'N/A' }}</td>
                     <td>{{ $defaulter['staff']->department->name ?? 'N/A' }}</td>
                     <td class="missed-days">{{ $defaulter['consecutive_missed'] }} Days</td>
                     <td>

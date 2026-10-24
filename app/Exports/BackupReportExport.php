@@ -2,74 +2,67 @@
 
 namespace App\Exports;
 
-use App\Models\SystemBackup;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Illuminate\Http\Request;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BackupReportExport implements FromQuery, WithHeadings, WithMapping
+class BackupReportExport implements FromCollection, WithHeadings, ShouldAutoSize, WithStyles
 {
     use Exportable;
 
-    protected $request;
+    protected $reportData;
+    protected $dates;
 
-    public function __construct(Request $request)
+    public function __construct(array $reportData, array $dates)
     {
-        $this->request = $request;
+        $this->reportData = $reportData;
+        $this->dates = $dates;
     }
 
-    public function query()
+    public function collection()
     {
-        $query = SystemBackup::with('staff')
-            ->join('staff_details', 'system_backups.staff_id', '=', 'staff_details.id')
-            ->select('system_backups.*')
-            ->orderBy('system_backups.backup_date', 'desc')
-            ->orderBy('staff_details.name', 'asc');
+        return collect($this->reportData)->map(function ($row) {
+            $rowValues = [
+                $row['sr'],
+                $row['staff']->name ?? 'Unknown',
+                $row['staff']->office->name ?? '-',
+            ];
 
-        if ($this->request->filled('staff_id')) {
-            $query->where('system_backups.staff_id', $this->request->staff_id);
-        }
+            foreach ($this->dates as $dateObj) {
+                $dStr = $dateObj['date_str'];
+                $rowValues[] = $row['days'][$dStr] ?? '-';
+            }
 
-        if ($this->request->filter_type == 'month') {
-            if ($this->request->filled('month')) {
-                $query->whereMonth('system_backups.backup_date', $this->request->month);
-            }
-            if ($this->request->filled('year')) {
-                $query->whereYear('system_backups.backup_date', $this->request->year);
-            }
-        } elseif ($this->request->filter_type == 'date_range') {
-            if ($this->request->filled('start_date')) {
-                $query->where('system_backups.backup_date', '>=', $this->request->start_date);
-            }
-            if ($this->request->filled('end_date')) {
-                $query->where('system_backups.backup_date', '<=', $this->request->end_date);
-            }
-        }
-
-        return $query;
+            return $rowValues;
+        });
     }
 
     public function headings(): array
     {
-        return [
-            'Staff Name',
-            'Backup Date',
-            'Backup Taken',
-            'Location',
-            'Remark / Note',
-        ];
+        $headings = ['SR', 'STAFF NAME', 'OFFICE'];
+        foreach ($this->dates as $dateObj) {
+            $headings[] = $dateObj['display'];
+        }
+        return $headings;
     }
 
-    public function map($backup): array
+    public function styles(Worksheet $sheet)
     {
         return [
-            $backup->staff->name ?? 'Unknown',
-            \Carbon\Carbon::parse($backup->backup_date)->format('d M Y'),
-            $backup->status,
-            $backup->location ?? '-',
-            $backup->remark ?? '-',
+            1 => [
+                'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF4F46E5']
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ]
+            ],
         ];
     }
 }

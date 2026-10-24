@@ -38,130 +38,245 @@ class ITManagementController extends Controller
 
     public function backupReportsIndex(Request $request)
     {
-        $staffs = StaffModel::where('status', 'Active')->orderBy('name')->get();
-        $query = $this->buildBackupReportQuery($request);
-        $backups = $query->paginate(20);
-
-        return view('ITManagement.backup-reports', compact('staffs', 'backups'));
+        $data = $this->getBackupReportMatrixData($request);
+        return view('ITManagement.backup-reports', $data);
     }
 
     public function backupReportsExportPdf(Request $request)
     {
-        $query = $this->buildBackupReportQuery($request);
-        $backups = $query->get();
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.backup-report-pdf', compact('backups'));
-        return $pdf->download('backup-reports-' . date('Y-m-d') . '.pdf');
+        $data = $this->getBackupReportMatrixData($request);
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.backup-report-pdf', $data)
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('backup-reports-' . $data['month'] . '-' . $data['year'] . '.pdf');
     }
 
     public function backupReportsExportExcel(Request $request)
     {
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\BackupReportExport($request), 'backup-reports-' . date('Y-m-d') . '.xlsx');
+        $data = $this->getBackupReportMatrixData($request);
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\BackupReportExport($data['reportData'], $data['dates']),
+            'backup-reports-' . $data['month'] . '-' . $data['year'] . '.xlsx'
+        );
     }
 
-    private function buildBackupReportQuery(Request $request)
+    private function getBackupReportMatrixData(Request $request)
     {
-        $query = SystemBackup::with('staff')
-            ->join('staff_details', 'system_backups.staff_id', '=', 'staff_details.id')
-            ->select('system_backups.*')
-            ->orderBy('system_backups.backup_date', 'desc')
-            ->orderBy('staff_details.name', 'asc');
+        $month = $request->input('month', date('m'));
+        $year = $request->input('year', date('Y'));
+        $officeId = $request->input('office_id');
+        $staffId = $request->input('staff_id');
+        $showFullMonth = $request->boolean('full_month', false);
 
-        if ($request->filled('staff_id')) {
-            $query->where('system_backups.staff_id', $request->staff_id);
+        $offices = \App\Models\Office\OfficeModel::orderBy('name')->get();
+        $allStaffList = StaffModel::where('status', 'Active')->orderBy('name')->get();
+
+        $staffQuery = StaffModel::where('status', 'Active')->with(['office', 'department'])->orderBy('name');
+        if ($officeId) {
+            $staffQuery->where('office_id', $officeId);
+        }
+        if ($staffId) {
+            $staffQuery->where('id', $staffId);
+        }
+        $staffs = $staffQuery->get();
+
+        // Calculate days in the selected month
+        $daysInMonth = \Carbon\Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        
+        $totalDaysToShow = ($year == date('Y') && $month == date('m') && !$showFullMonth) 
+            ? (int)date('d') 
+            : $daysInMonth;
+
+        $dates = [];
+        for ($d = 1; $d <= $totalDaysToShow; $d++) {
+            $dateCarbon = \Carbon\Carbon::createFromDate($year, $month, $d);
+            $dates[] = [
+                'day' => str_pad($d, 2, '0', STR_PAD_LEFT),
+                'date_str' => $dateCarbon->toDateString(),
+                'display' => $dateCarbon->format('d-m-Y'),
+                'day_name' => $dateCarbon->format('D'),
+                'is_sunday' => $dateCarbon->isSunday(),
+                'is_future' => $dateCarbon->isFuture(),
+            ];
         }
 
-        if ($request->filter_type == 'month') {
-            if ($request->filled('month')) {
-                $query->whereMonth('system_backups.backup_date', $request->month);
+        // Fetch backups for this month and for these staff in a single query
+        $backups = SystemBackup::whereIn('staff_id', $staffs->pluck('id'))
+            ->whereYear('backup_date', $year)
+            ->whereMonth('backup_date', $month)
+            ->get()
+            ->groupBy('staff_id');
+
+        $reportData = [];
+        foreach ($staffs as $index => $staff) {
+            $staffBackups = $backups->get($staff->id, collect())->keyBy(function($item) {
+                return \Carbon\Carbon::parse($item->backup_date)->toDateString();
+            });
+
+            $row = [
+                'sr' => $index + 1,
+                'staff' => $staff,
+                'days' => []
+            ];
+
+            foreach ($dates as $dateObj) {
+                $dStr = $dateObj['date_str'];
+                $backup = $staffBackups->get($dStr);
+
+                if ($backup) {
+                    if ($backup->status === 'YES') {
+                        $val = 'YES';
+                    } elseif ($backup->remark === 'NO-FILL') {
+                        $val = 'NO-FILL';
+                    } else {
+                        $val = 'NO';
+                    }
+                } else {
+                    if ($dateObj['is_future']) {
+                        $val = '-';
+                    } else {
+                        $val = 'NO-FILL';
+                    }
+                }
+
+                $row['days'][$dStr] = $val;
             }
-            if ($request->filled('year')) {
-                $query->whereYear('system_backups.backup_date', $request->year);
-            }
-        } elseif ($request->filter_type == 'date_range') {
-            if ($request->filled('start_date')) {
-                $query->where('system_backups.backup_date', '>=', $request->start_date);
-            }
-            if ($request->filled('end_date')) {
-                $query->where('system_backups.backup_date', '<=', $request->end_date);
-            }
+
+            $reportData[] = $row;
         }
 
-        return $query;
+        return [
+            'reportData' => $reportData,
+            'dates' => $dates,
+            'month' => $month,
+            'year' => $year,
+            'officeId' => $officeId,
+            'staffId' => $staffId,
+            'offices' => $offices,
+            'allStaffList' => $allStaffList,
+            'showFullMonth' => $showFullMonth,
+            'daysInMonth' => $daysInMonth
+        ];
     }
 
-    public function defaultersIndex()
+    public function defaultersIndex(Request $request)
     {
-        $defaulters = $this->getDefaultersData();
-        return view('ITManagement.backup-defaulters', compact('defaulters'));
+        $minDays = (int) $request->input('min_days', 3);
+        if ($minDays < 1) $minDays = 3;
+        $officeId = $request->input('office_id');
+        $excludeMailed = $request->input('exclude_mailed', '1') === '1';
+
+        $defaulters = $this->getDefaultersData($minDays, $officeId, $excludeMailed);
+        $offices = \App\Models\Office\OfficeModel::orderBy('name')->get();
+
+        // Count how many staff are currently in the 7-day grace period
+        $sevenDaysAgo = now()->subDays(7);
+        $recentlyMailedCount = \App\Models\BackupDefaulterMailLog::where('created_at', '>=', $sevenDaysAgo)
+            ->distinct('staff_id')
+            ->count('staff_id');
+
+        return view('ITManagement.backup-defaulters', compact('defaulters', 'offices', 'minDays', 'officeId', 'excludeMailed', 'recentlyMailedCount'));
     }
 
-    public function defaultersExportPdf()
+    public function defaultersExportPdf(Request $request)
     {
-        $defaulters = $this->getDefaultersData();
+        $minDays = (int) $request->input('min_days', 3);
+        if ($minDays < 1) $minDays = 3;
+        $officeId = $request->input('office_id');
+        $excludeMailed = $request->input('exclude_mailed', '1') === '1';
+
+        $defaulters = $this->getDefaultersData($minDays, $officeId, $excludeMailed);
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.defaulters-pdf', compact('defaulters'));
         return $pdf->download('backup-defaulters-' . date('Y-m-d') . '.pdf');
     }
 
-    public function defaultersExportExcel()
+    public function defaultersExportExcel(Request $request)
     {
-        $defaulters = $this->getDefaultersData();
+        $minDays = (int) $request->input('min_days', 3);
+        if ($minDays < 1) $minDays = 3;
+        $officeId = $request->input('office_id');
+        $excludeMailed = $request->input('exclude_mailed', '1') === '1';
+
+        $defaulters = $this->getDefaultersData($minDays, $officeId, $excludeMailed);
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\DefaultersExport($defaulters), 'backup-defaulters-' . date('Y-m-d') . '.xlsx');
     }
 
-    private function getDefaultersData()
+    public function getDefaultersData($minDays = 3, $officeId = null, $excludeRecentlyMailed = true)
     {
-        $activeStaffs = StaffModel::where('status', 'Active')->get();
+        $query = StaffModel::where('status', 'Active')->with(['department', 'office'])->orderBy('name');
+        if ($officeId) {
+            $query->where('office_id', $officeId);
+        }
+
+        // If excluding staff who were mailed within the last 7 days
+        if ($excludeRecentlyMailed) {
+            $sevenDaysAgo = now()->subDays(7);
+            $recentlyMailedStaffIds = \App\Models\BackupDefaulterMailLog::where('created_at', '>=', $sevenDaysAgo)
+                ->pluck('staff_id')
+                ->unique()
+                ->toArray();
+
+            if (!empty($recentlyMailedStaffIds)) {
+                $query->whereNotIn('id', $recentlyMailedStaffIds);
+            }
+        }
+
+        $activeStaffs = $query->get();
         $defaulters = collect();
 
+        // Optimized single query for all backups in the past 60 days
+        $lookbackDate = today()->subDays(60)->toDateString();
+        $allBackups = SystemBackup::whereIn('staff_id', $activeStaffs->pluck('id'))
+            ->whereDate('backup_date', '>=', $lookbackDate)
+            ->get()
+            ->groupBy('staff_id');
+
+        // Fetch latest mail logs for each staff member to display last mailed date/grace info
+        $latestMailLogs = \App\Models\BackupDefaulterMailLog::whereIn('staff_id', $activeStaffs->pluck('id'))
+            ->latest()
+            ->get()
+            ->groupBy('staff_id');
+
         foreach ($activeStaffs as $staff) {
+            $staffBackups = $allBackups->get($staff->id, collect())->keyBy(function($item) {
+                return \Carbon\Carbon::parse($item->backup_date)->toDateString();
+            });
+
             $consecutiveMissed = 0;
             $dateCursor = today();
-            
-            // Calculate consecutive missed days backwards
-            while (true) {
-                // If it's Sunday, skip it
+
+            for ($i = 0; $i < 60; $i++) {
                 if ($dateCursor->isSunday()) {
                     $dateCursor->subDay();
                     continue;
                 }
 
-                $backup = SystemBackup::where('staff_id', $staff->id)
-                                      ->whereDate('backup_date', $dateCursor->toDateString())
-                                      ->first();
+                $dateStr = $dateCursor->toDateString();
+                $backup = $staffBackups->get($dateStr);
 
-                // Stop counting consecutive missed days if we hit a YES
-                if ($backup && $backup->status == 'YES') {
+                if ($backup && $backup->status === 'YES') {
                     break;
                 }
 
                 $consecutiveMissed++;
                 $dateCursor->subDay();
-                
-                // Prevent infinite loops (limit lookback to max 30 days)
-                if ($consecutiveMissed > 30) {
-                    break;
-                }
             }
 
-            // If missed 3 or more consecutive working days
-            if ($consecutiveMissed >= 3) {
-                // Find recent YES backups
-                $recentBackups = SystemBackup::where('staff_id', $staff->id)
-                                             ->where('status', 'YES')
-                                             ->orderBy('backup_date', 'desc')
-                                             ->take(3)
-                                             ->pluck('backup_date');
-                                             
+            if ($consecutiveMissed >= $minDays) {
+                $recentBackups = $staffBackups->filter(function($b) {
+                    return $b->status === 'YES';
+                })->sortByDesc('backup_date')->take(3)->pluck('backup_date');
+
+                $lastMail = $latestMailLogs->get($staff->id)?->first();
+
                 $defaulters->push([
                     'staff' => $staff,
                     'consecutive_missed' => $consecutiveMissed,
-                    'recent_backups' => $recentBackups
+                    'recent_backups' => $recentBackups,
+                    'last_mail' => $lastMail
                 ]);
             }
         }
 
-        // Sort by most missed days first
         return $defaulters->sortByDesc('consecutive_missed')->values();
     }
 
@@ -170,14 +285,39 @@ class ITManagementController extends Controller
         $staff = StaffModel::findOrFail($id);
 
         if ($staff->email) {
-            \Illuminate\Support\Facades\Mail::to($staff->email)->send(new \App\Mail\BackupDefaulterMail($staff));
-            
-            \App\Models\BackupDefaulterMailLog::create([
-                'staff_id' => $staff->id,
-                'sent_by' => auth()->id()
-            ]);
+            try {
+                $missedDays = $staff->getConsecutiveMissedBackupDays();
+                \Illuminate\Support\Facades\Mail::to($staff->email)->send(new \App\Mail\BackupDefaulterMail($staff, $missedDays));
+                
+                \App\Models\BackupDefaulterMailLog::create([
+                    'staff_id' => $staff->id,
+                    'sent_by' => auth()->id()
+                ]);
 
-            return back()->with('success', 'Mail sent successfully to ' . $staff->name);
+                if (request()->wantsJson() || request()->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Mail sent successfully to ' . $staff->name
+                    ]);
+                }
+
+                return back()->with('success', 'Mail sent successfully to ' . $staff->name);
+            } catch (\Exception $e) {
+                if (request()->wantsJson() || request()->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to send mail: ' . $e->getMessage()
+                    ], 500);
+                }
+                return back()->with('error', 'Failed to send mail: ' . $e->getMessage());
+            }
+        }
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No email address found for ' . $staff->name
+            ], 422);
         }
 
         return back()->with('error', 'No email address found for ' . $staff->name);

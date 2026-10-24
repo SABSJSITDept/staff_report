@@ -143,8 +143,8 @@ Route::get('/migrate-db', function() {
     return \Illuminate\Support\Facades\Artisan::output();
 });
 
-// IT Management (IT Dept only)
-Route::middleware(['auth', 'role:IT DEPARTMENT'])->prefix('it-management')->name('it-management.')->group(function () {
+// IT Management (IT Dept, Admin, Manager)
+Route::middleware(['auth', 'role:IT DEPARTMENT,admin,manager'])->prefix('it-management')->name('it-management.')->group(function () {
     Route::resource('recharges', \App\Http\Controllers\ItRechargeController::class);
     Route::post('recharges/{recharge}/mark-paid', [\App\Http\Controllers\ItRechargeController::class, 'markPaid'])->name('recharges.mark-paid');
     Route::get('recharges/{recharge}/history', [\App\Http\Controllers\ItRechargeController::class, 'history'])->name('recharges.history');

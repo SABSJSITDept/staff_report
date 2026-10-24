@@ -30,6 +30,34 @@
     </div>
 </div>
 
+{{-- Daily Backup Pending Alert (If missed 3+ days) --}}
+@if(isset($backupMissedDays) && $backupMissedDays >= 3)
+<div class="mb-6">
+    <div class="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 rounded-2xl p-5 text-white shadow-xl shadow-red-600/20 border border-red-400/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center flex-shrink-0 text-white shadow-inner">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-black text-lg text-white tracking-wide">दैनिक बैकअप लेना बाकी है!</h3>
+                    <span class="bg-white text-red-700 text-xs font-black px-2.5 py-0.5 rounded-full uppercase shadow-sm">
+                        {{ $backupMissedDays }} दिनों से पेंडिंग
+                    </span>
+                </div>
+                <p class="text-white/90 text-sm mt-1 font-medium">
+                    आपने पिछले <strong>{{ $backupMissedDays }} दिनों</strong> से Daily Data BackUp नहीं लिया है (या पोर्टल पर एंट्री नहीं की है)। कृपया डेटा सुरक्षा के लिए तुरंत आज का बैकअप लें और पोर्टल पर अपडेट करें।
+                </p>
+            </div>
+        </div>
+        <a href="{{ route('staff.daily-backup.create') }}" class="whitespace-nowrap bg-white text-red-600 hover:bg-red-50 font-black py-2.5 px-6 rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2 text-sm flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            आज का बैकअप दर्ज करें
+        </a>
+    </div>
+</div>
+@endif
+
 {{-- IT Pending Recharges Alert --}}
 @if(isset($pendingRecharges) && $pendingRecharges->count() > 0)
 <div class="mb-6">

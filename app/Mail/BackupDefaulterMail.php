@@ -13,10 +13,12 @@ class BackupDefaulterMail extends Mailable
     use Queueable, SerializesModels;
 
     public $staff;
+    public $consecutiveMissed;
 
-    public function __construct($staff)
+    public function __construct($staff, $consecutiveMissed = null)
     {
         $this->staff = $staff;
+        $this->consecutiveMissed = $consecutiveMissed;
     }
 
     public function envelope(): Envelope

@@ -96,7 +96,7 @@ class User extends Authenticatable
 
     public function canAccessIT(): bool
     {
-        if ($this->role === 'IT DEPARTMENT') {
+        if (in_array($this->role, ['IT DEPARTMENT', 'admin'])) {
             return true;
         }
         

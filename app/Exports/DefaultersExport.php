@@ -28,6 +28,7 @@ class DefaultersExport implements FromCollection, WithHeadings, WithMapping
         return [
             'Staff Name',
             'Email',
+            'Office',
             'Department',
             'Consecutive Days Missed',
             'Recent Backup Dates'
@@ -48,6 +49,7 @@ class DefaultersExport implements FromCollection, WithHeadings, WithMapping
         return [
             $defaulter['staff']->name,
             $defaulter['staff']->email,
+            $defaulter['staff']->office->name ?? 'N/A',
             $defaulter['staff']->department->name ?? 'N/A',
             $defaulter['consecutive_missed'] . ' Days',
             $recentBackups,

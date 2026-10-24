@@ -78,6 +78,9 @@ class StaffDashboardController extends Controller
         $isAnniversary = $todaysAnniversaries->contains('id', $staffDetail->id);
         $yearsOfService = $isAnniversary ? $todaysAnniversaries->firstWhere('id', $staffDetail->id)->yearsOfService : 0;
 
+        // Consecutive Missed Backup Days calculation
+        $backupMissedDays = $staffDetail->getConsecutiveMissedBackupDays();
+
         return view('Staff.dashboard', [
             'staffDetail' => $staffDetail,
             'totalReports' => $totalReports,
@@ -89,7 +92,8 @@ class StaffDashboardController extends Controller
             'yearsOfService' => $yearsOfService,
             'todaysBirthdays' => $todaysBirthdays,
             'todaysAnniversaries' => $todaysAnniversaries,
-            'pendingRecharges' => $pendingRecharges
+            'pendingRecharges' => $pendingRecharges,
+            'backupMissedDays' => $backupMissedDays
         ]);
     }
 
