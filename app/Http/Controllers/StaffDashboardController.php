@@ -135,4 +135,16 @@ class StaffDashboardController extends Controller
     {
         return view('Staff.guide');
     }
+
+    public function dismissWhatsNew(\Illuminate\Http\Request $request)
+    {
+        $version = $request->input('version', '2026_october_release');
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user) {
+            $user->update([
+                'seen_whats_new_version' => $version
+            ]);
+        }
+        return response()->json(['success' => true, 'version' => $version]);
+    }
 }

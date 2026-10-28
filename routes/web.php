@@ -80,6 +80,7 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
     Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
     Route::get('/track-task', [StaffDashboardController::class, 'trackTask'])->name('track-task');
     Route::get('/guide', [StaffDashboardController::class, 'guide'])->name('guide');
+    Route::post('/dismiss-whats-new', [StaffDashboardController::class, 'dismissWhatsNew'])->name('dismiss-whats-new');
     Route::post('/profile-update-request', [\App\Http\Controllers\ProfileUpdateRequestController::class, 'store'])->name('profile.update.request');
 });
 
