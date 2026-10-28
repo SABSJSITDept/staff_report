@@ -106,4 +106,24 @@ class User extends Authenticatable
         
         return false;
     }
+
+    public function personalTasks()
+    {
+        return $this->hasMany(\App\Models\PersonalTask::class)->latest();
+    }
+
+    public function createdProjects()
+    {
+        return $this->hasMany(\App\Models\Project::class, 'created_by')->latest();
+    }
+
+    public function projects()
+    {
+        return $this->belongsToMany(\App\Models\Project::class, 'project_members')->withPivot('role')->withTimestamps();
+    }
+
+    public function assignedProjectTasks()
+    {
+        return $this->hasMany(\App\Models\ProjectTask::class, 'assigned_to');
+    }
 }

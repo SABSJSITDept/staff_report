@@ -246,3 +246,37 @@ Route::middleware(['auth'])->prefix('ratings')->name('ratings.')->group(function
     Route::get('/{staff_id}/create', [\App\Http\Controllers\RatingController::class, 'create'])->name('create');
     Route::post('/{staff_id}', [\App\Http\Controllers\RatingController::class, 'store'])->name('store');
 });
+
+// Personal Task List / To-Do Planner (Daily routine & Scheduled future tasks)
+Route::middleware(['auth'])->prefix('personal-tasks')->name('personal-tasks.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PersonalTaskController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\PersonalTaskController::class, 'store'])->name('store');
+    Route::put('/{personalTask}', [\App\Http\Controllers\PersonalTaskController::class, 'update'])->name('update');
+    Route::post('/{personalTask}/toggle', [\App\Http\Controllers\PersonalTaskController::class, 'toggle'])->name('toggle');
+    Route::delete('/{personalTask}', [\App\Http\Controllers\PersonalTaskController::class, 'destroy'])->name('destroy');
+});
+
+// Office Projects & Team Collaboration
+Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ProjectController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\ProjectController::class, 'store'])->name('store');
+    Route::get('/{project}', [\App\Http\Controllers\ProjectController::class, 'show'])->name('show');
+    Route::put('/{project}', [\App\Http\Controllers\ProjectController::class, 'update'])->name('update');
+    Route::post('/{project}/status', [\App\Http\Controllers\ProjectController::class, 'updateStatus'])->name('status');
+    Route::post('/{project}/members', [\App\Http\Controllers\ProjectController::class, 'addMembers'])->name('members.add');
+    Route::delete('/{project}/members/{member}', [\App\Http\Controllers\ProjectController::class, 'removeMember'])->name('members.remove');
+    Route::delete('/{project}', [\App\Http\Controllers\ProjectController::class, 'destroy'])->name('destroy');
+
+    // Project Tasks
+    Route::post('/{project}/tasks', [\App\Http\Controllers\ProjectTaskController::class, 'store'])->name('tasks.store');
+
+    // Project Group Messages (WhatsApp Chat)
+    Route::post('/{project}/messages', [\App\Http\Controllers\ProjectController::class, 'sendMessage'])->name('messages.store');
+});
+
+Route::middleware(['auth'])->prefix('project-tasks')->name('project-tasks.')->group     (function () {
+    Route::put('/{projectTask}', [\App\Http\Controllers\ProjectTaskController::class, 'update'])->name('update');
+    Route::post('/{projectTask}/status', [\App\Http\Controllers\ProjectTaskController::class, 'updateStatus'])->name('status');
+    Route::post('/{projectTask}/comments', [\App\Http\Controllers\ProjectTaskController::class, 'addComment'])->name('comments.store');
+    Route::delete('/{projectTask}', [\App\Http\Controllers\ProjectTaskController::class, 'destroy'])->name('destroy');
+});

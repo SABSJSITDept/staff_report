@@ -280,8 +280,35 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
                                 {{ $isHod ? 'Department Reports' : 'View Reports' }}
                             </a>
+
+                            <div class="border-t border-gray-100 my-1"></div>
+
+                            <a href="{{ route('personal-tasks.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                My Tasks
+                            </a>
+
+                            <a href="{{ route('projects.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition font-medium">
+                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                                Office Projects
+                            </a>
                         </div>
                     </div>
+
+                    {{-- Top Level Task List & Projects --}}
+                    @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
+                    <a href="{{ route('personal-tasks.index') }}"
+                       class="text-sm font-medium hover:text-indigo-200 transition focus:outline-none flex items-center gap-1.5 lg:ml-2 {{ request()->routeIs('personal-tasks.*') ? 'text-indigo-200 font-bold' : '' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                        Task List
+                    </a>
+
+                    <a href="{{ route('projects.index') }}"
+                       class="text-sm font-medium hover:text-indigo-200 transition focus:outline-none flex items-center gap-1.5 lg:ml-2 {{ request()->routeIs('projects.*') ? 'text-indigo-200 font-bold' : '' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                        Projects
+                    </a>
+                    @endif
 
                     {{-- IT Support Top Level --}}
                     @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
@@ -458,6 +485,10 @@
                 <a href="{{ route('staff.daily-backup.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">My Daily Backup</a>
                 @endif
                 <a href="{{ route('daily-report.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">{{ $isHod ? 'Department Reports' : 'View Reports' }}</a>
+                @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
+                <a href="{{ route('personal-tasks.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">My Tasks</a>
+                <a href="{{ route('projects.index') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-600 transition">Office Projects</a>
+                @endif
                 
                 @if(!in_array(Auth::user()->role, ['sanyojak', 'pst']))
                 <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider px-3 py-2 mt-2">Support</div>
