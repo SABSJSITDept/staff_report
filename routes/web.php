@@ -273,6 +273,8 @@ Route::middleware(['auth'])->prefix('projects')->name('projects.')->group(functi
 
     // Project Group Messages (WhatsApp Chat)
     Route::post('/{project}/messages', [\App\Http\Controllers\ProjectController::class, 'sendMessage'])->name('messages.store');
+    Route::get('/{project}/messages/{message}/info', [\App\Http\Controllers\ProjectController::class, 'messageReadInfo'])->name('messages.info');
+    Route::post('/{project}/messages/mark-seen', [\App\Http\Controllers\ProjectController::class, 'markMessagesSeen'])->name('messages.mark-seen');
 });
 
 Route::middleware(['auth'])->prefix('project-tasks')->name('project-tasks.')->group     (function () {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\ProjectMessage;
+use App\Models\ProjectMessageRead;
 use App\Models\Staff\StaffModel;
 use App\Models\User;
 use App\Models\Notification;
@@ -205,8 +206,32 @@ class ProjectController extends Controller
         $availableStaff = $availableStaff->with(['user', 'department'])->orderBy('name')->get();
 
         // Load project group messages for WhatsApp-style chat feed
+        // Automatically record seen status for all incoming messages in this project
+        $unseenMessageIds = $project->messages()
+            ->where('user_id', '!=', $userId)
+            ->whereDoesntHave('reads', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->pluck('id');
+
+        if ($unseenMessageIds->isNotEmpty()) {
+            $now = now();
+            $readRecords = [];
+            foreach ($unseenMessageIds as $mId) {
+                $readRecords[] = [
+                    'project_message_id' => $mId,
+                    'user_id' => $userId,
+                    'seen_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            ProjectMessageRead::insert($readRecords);
+        }
+
+        // Load project group messages for WhatsApp-style chat feed with read receipts history
         $messages = $project->messages()
-            ->with(['user.staff', 'task.assignedTo.staff', 'task.creator.staff'])
+            ->with(['user.staff', 'task.assignedTo.staff', 'task.creator.staff', 'reads.user.staff'])
             ->oldest()
             ->get();
 
@@ -359,4 +384,87 @@ class ProjectController extends Controller
 
         return redirect()->route('projects.index')->with('success', 'Project deleted successfully.');
     }
+
+    public function messageReadInfo(Project $project, ProjectMessage $message)
+    {
+        $userId = Auth::id();
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$project->isMember($userId)) {
+            abort(403, "Unauthorized");
+        }
+
+        // Load reads with users
+        $message->load(['reads.user.staff', 'user.staff']);
+
+        $readUserIds = $message->reads->pluck('user_id')->toArray();
+
+        $readBy = $message->reads->map(function ($read) {
+            return [
+                'user_id' => $read->user_id,
+                'name' => $read->user->name ?? "Unknown",
+                'role' => $read->user->role ?? "staff",
+                'seen_at' => $read->seen_at ? $read->seen_at->format('d M, h:i A') : "",
+                'seen_at_relative' => $read->seen_at ? $read->seen_at->diffForHumans() : "",
+            ];
+        });
+
+        // Other project members who haven't seen it yet
+        $otherMembers = $project->members
+            ->where('id', '!=', $message->user_id)
+            ->whereNotIn('id', $readUserIds)
+            ->map(function ($m) {
+                return [
+                    'user_id' => $m->id,
+                    'name' => $m->name,
+                    'role' => $m->role,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message_id' => $message->id,
+            'message_text' => $message->message,
+            'sender_name' => $message->user ? $message->user->name : "System",
+            'sent_at' => $message->created_at->format('d M Y, h:i A'),
+            'read_by' => $readBy,
+            'not_read_yet' => $otherMembers,
+            'total_members' => $project->members->where('id', '!=', $message->user_id)->count(),
+        ]);
+    }
+
+    public function markMessagesSeen(Request $request, Project $project)
+    {
+        $userId = Auth::id();
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$project->isMember($userId)) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $unseenMessageIds = $project->messages()
+            ->where('user_id', '!=', $userId)
+            ->whereDoesntHave('reads', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->pluck('id');
+
+        if ($unseenMessageIds->isNotEmpty()) {
+            $now = now();
+            $readRecords = [];
+            foreach ($unseenMessageIds as $mId) {
+                $readRecords[] = [
+                    'project_message_id' => $mId,
+                    'user_id' => $userId,
+                    'seen_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            ProjectMessageRead::insert($readRecords);
+        }
+
+        return response()->json(['success' => true, 'marked_count' => $unseenMessageIds->count()]);
+    }
+
 }

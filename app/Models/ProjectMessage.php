@@ -37,5 +37,22 @@ class ProjectMessage extends Model
     {
         return $this->belongsTo(ProjectTask::class, 'project_task_id');
     }
+
+    public function reads()
+    {
+        return $this->hasMany(ProjectMessageRead::class);
+    }
+
+    public function readByUsers()
+    {
+        return $this->belongsToMany(User::class, 'project_message_reads')
+            ->withPivot('seen_at')
+            ->withTimestamps();
+    }
+
+    public function isSeenBy($userId): bool
+    {
+        return $this->reads->contains('user_id', $userId);
+    }
 }
 

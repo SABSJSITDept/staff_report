@@ -129,7 +129,8 @@
                     @forelse($tasks as $t)
                         @php
                             $isDone = $t->status === 'completed';
-                            $canUpdate = Auth::user()->isAdmin() || $t->assigned_to == Auth::id();
+                            $canUpdateStatus = Auth::user()->isAdmin() || $t->assigned_to == Auth::id();
+                            $canEditTask = Auth::user()->isAdmin() || $t->created_by == Auth::id();
                             $isMine = $t->assigned_to == Auth::id();
                             $statusColors = [
                                 'pending'     => 'bg-amber-100 text-amber-800 border-amber-200',
@@ -147,8 +148,8 @@
 
                             <div class="flex items-start justify-between gap-2">
                                 <div class="flex items-start gap-2.5 min-w-0 flex-1">
-                                    {{-- Quick Checkbox/Status Icon --}}
-                                    @if($canUpdate)
+                                    {{-- Quick Checkbox/Status Icon for Assigned User --}}
+                                    @if($canUpdateStatus)
                                         <form action="{{ route('project-tasks.status', $t->id) }}" method="POST" class="mt-0.5 shrink-0">
                                             @csrf
                                             <input type="hidden" name="status" value="{{ $isDone ? 'in_progress' : 'completed' }}">
@@ -159,7 +160,7 @@
                                             </button>
                                         </form>
                                     @else
-                                        <div class="w-5 h-5 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-[10px] text-slate-400 mt-0.5 shrink-0" title="Only assigned staff can update">
+                                        <div class="w-5 h-5 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center text-[10px] text-slate-400 mt-0.5 shrink-0" title="Only assigned staff can update status">
                                             🔒
                                         </div>
                                     @endif
@@ -182,6 +183,10 @@
                                                 @endif
                                             </span>
 
+                                            @if($t->created_by != Auth::id() && $t->creator)
+                                                <span class="text-[9px] text-slate-400 font-medium">By: {{ $t->creator->name }}</span>
+                                            @endif
+
                                             @if($t->due_date)
                                                 <span class="{{ $t->due_date->isPast() && !$isDone ? 'text-rose-600 font-bold' : 'text-slate-400' }}">
                                                     📅 {{ $t->due_date->format('d M') }}
@@ -191,9 +196,9 @@
                                     </div>
                                 </div>
 
-                                {{-- Quick Edit for assigned --}}
-                                @if($canUpdate)
-                                    <button onclick='openEditTaskModal(@json($t))' class="text-slate-400 hover:text-emerald-600 p-1 rounded transition opacity-0 group-hover:opacity-100 shrink-0" title="Edit Task">
+                                {{-- Quick Edit: ONLY FOR CREATOR, OWNER OR ADMIN --}}
+                                @if($canEditTask)
+                                    <button onclick='openEditTaskModal(@json($t))' class="text-slate-400 hover:text-emerald-600 p-1 rounded transition opacity-0 group-hover:opacity-100 shrink-0" title="Edit Task (Created by you)">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>
                                 @endif
@@ -247,6 +252,12 @@
                             $timeStr = $msg->created_at->format('h:i A');
                             $msgColors = ['#1f7a8c', '#00a884', '#e542a3', '#6f42c1', '#d97706', '#2563eb'];
                             $nameColor = $msgColors[crc32($userName) % count($msgColors)];
+
+                            // Seen tracking metrics for WhatsApp Ticks
+                            $otherMembersCount = $project->members->where('id', '!=', $msg->user_id)->count();
+                            $seenReads = $msg->reads->where('user_id', '!=', $msg->user_id);
+                            $seenCount = $seenReads->count();
+                            $isAllSeen = $otherMembersCount > 0 && $seenCount >= $otherMembersCount;
                         @endphp
 
                         @if($msg->type === 'system')
@@ -359,11 +370,27 @@
                                         </div>
                                     </div>
 
-                                    {{-- Timestamp & Tick --}}
-                                    <div class="flex items-center justify-end gap-1 mt-1 text-[10px] text-slate-500">
+                                    {{-- Timestamp & WhatsApp Read Receipts Ticks --}}
+                                    <div class="flex items-center justify-end gap-1.5 mt-1.5 text-[10px] text-slate-500">
                                         <span>{{ $timeStr }}</span>
+
                                         @if($isMe)
-                                            <span class="text-blue-500 font-bold">✓✓</span>
+                                            <button type="button" onclick="openMessageInfo({{ $msg->id }})" class="inline-flex items-center gap-0.5 hover:opacity-80 transition cursor-pointer" title="Message Info (देखा: {{ $seenCount }}/{{ $otherMembersCount }})">
+                                                @if($isAllSeen)
+                                                    <span class="text-[#53bdeb] font-black text-xs">✓✓</span>
+                                                @elseif($seenCount > 0)
+                                                    <span class="text-slate-400 font-bold text-xs flex items-center">
+                                                        <span class="text-[#53bdeb]">✓</span><span>✓</span>
+                                                    </span>
+                                                    <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1 rounded-sm leading-tight">{{ $seenCount }}/{{ $otherMembersCount }}</span>
+                                                @else
+                                                    <span class="text-slate-400 font-bold text-xs">✓✓</span>
+                                                @endif
+                                            </button>
+                                        @else
+                                            <button type="button" onclick="openMessageInfo({{ $msg->id }})" class="text-slate-400 hover:text-slate-600 transition text-[10px] ml-0.5" title="Message Info (किसने देखा)">
+                                                <svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </button>
                                         @endif
                                     </div>
                                 </div>
@@ -388,15 +415,31 @@
                                     @endif
 
                                     {{-- Message Body --}}
-                                    <p class="text-xs sm:text-sm text-slate-800 leading-relaxed break-words pr-12">
+                                    <p class="text-xs sm:text-sm text-slate-800 leading-relaxed break-words pr-14 pb-2">
                                         {{ $msg->message }}
                                     </p>
 
-                                    {{-- Time & Checkmarks (Bottom right, WhatsApp style) --}}
-                                    <div class="absolute right-2 bottom-1 flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+                                    {{-- Time & WhatsApp Read Receipts Ticks (Bottom right, WhatsApp style) --}}
+                                    <div class="absolute right-2.5 bottom-1 flex items-center gap-1 text-[10px] text-slate-500 font-medium">
                                         <span>{{ $timeStr }}</span>
+
                                         @if($isMe)
-                                            <span class="text-blue-500 font-bold">✓✓</span>
+                                            <button type="button" onclick="openMessageInfo({{ $msg->id }})" class="inline-flex items-center gap-0.5 hover:opacity-80 transition cursor-pointer" title="Message Info (देखा: {{ $seenCount }}/{{ $otherMembersCount }})">
+                                                @if($isAllSeen)
+                                                    <span class="text-[#53bdeb] font-black text-xs">✓✓</span>
+                                                @elseif($seenCount > 0)
+                                                    <span class="text-slate-400 font-bold text-xs flex items-center">
+                                                        <span class="text-[#53bdeb]">✓</span><span>✓</span>
+                                                    </span>
+                                                    <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1 rounded-sm leading-tight">{{ $seenCount }}/{{ $otherMembersCount }}</span>
+                                                @else
+                                                    <span class="text-slate-400 font-bold text-xs">✓✓</span>
+                                                @endif
+                                            </button>
+                                        @else
+                                            <button type="button" onclick="openMessageInfo({{ $msg->id }})" class="text-slate-400 hover:text-slate-600 transition text-[10px] ml-0.5" title="Message Info (किसने देखा)">
+                                                <svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            </button>
                                         @endif
                                     </div>
                                 </div>
@@ -475,6 +518,78 @@
         </div>
     </div>
 
+</div>
+
+{{-- ============================================================== --}}
+{{-- MODAL: WHATSAPP MESSAGE INFO (READ RECEIPTS & HISTORY)         --}}
+{{-- ============================================================== --}}
+<div id="messageInfoModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs p-4 sm:p-6">
+    <div class="min-h-full flex items-center justify-center py-6">
+        <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden relative">
+            {{-- Header --}}
+            <div class="bg-[#008069] text-white p-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <button type="button" onclick="closeMessageInfoModal()" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-emerald-700/60 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    </button>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Message Info (मैसेज जानकारी)</h3>
+                        <p id="msgInfoSentAt" class="text-[10px] text-emerald-100"></p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeMessageInfoModal()" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-emerald-700/60 transition font-bold text-lg leading-none">
+                    &times;
+                </button>
+            </div>
+
+            {{-- Message Preview --}}
+            <div class="p-4 bg-[#efeae2]/60 border-b border-slate-200">
+                <div class="bg-[#d9fdd3] text-slate-800 p-3 rounded-2xl rounded-tr-none text-xs border border-emerald-200 shadow-2xs">
+                    <p id="msgInfoPreview" class="leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+            </div>
+
+            {{-- Read By List --}}
+            <div class="p-4 space-y-4 max-h-80 overflow-y-auto">
+                {{-- Read by section --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <span class="flex items-center gap-1.5 text-emerald-700">
+                            <span class="text-[#53bdeb] text-sm">✓✓</span>
+                            <span>Read by (किसने देखा)</span>
+                        </span>
+                        <span id="msgInfoReadCount" class="text-[11px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">0</span>
+                    </div>
+
+                    <div id="msgInfoReadList" class="space-y-2 divide-y divide-slate-100">
+                        {{-- Populated by JS --}}
+                    </div>
+                </div>
+
+                {{-- Not read yet section --}}
+                <div class="space-y-2 pt-3 border-t border-slate-100">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <span class="flex items-center gap-1.5 text-slate-500">
+                            <span class="text-slate-400 text-sm">✓✓</span>
+                            <span>Not read yet (जिन्होंने अभी नहीं देखा)</span>
+                        </span>
+                        <span id="msgInfoUnreadCount" class="text-[11px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">0</span>
+                    </div>
+
+                    <div id="msgInfoUnreadList" class="space-y-1.5 divide-y divide-slate-100">
+                        {{-- Populated by JS --}}
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="p-3 bg-slate-50 border-t border-slate-100 text-right">
+                <button type="button" onclick="closeMessageInfoModal()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- ============================================================== --}}
@@ -560,7 +675,7 @@
 </div>
 
 {{-- ============================================================== --}}
-{{-- MODAL 2: EDIT TASK MODAL (Only Assigned Member)                --}}
+{{-- MODAL 2: EDIT TASK MODAL (Only Creator or Admin)               --}}
 {{-- ============================================================== --}}
 <div id="editTaskModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs p-4 sm:p-6">
     <div class="min-h-full flex items-center justify-center py-6">
@@ -568,7 +683,7 @@
             <div class="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
                 <div>
                     <h3 class="text-xl font-black text-slate-900 tracking-tight">Update Task Details</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Only the assigned staff member can update this task.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Only the task creator (or project owner) can edit task details.</p>
                 </div>
                 <button onclick="closeEditTaskModal()" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -948,6 +1063,92 @@
         });
     }
 
+    // WhatsApp Message Info (Read Receipts & History)
+    function openMessageInfo(messageId) {
+        const modal = document.getElementById('messageInfoModal');
+        const readList = document.getElementById('msgInfoReadList');
+        const unreadList = document.getElementById('msgInfoUnreadList');
+        const preview = document.getElementById('msgInfoPreview');
+        const sentAt = document.getElementById('msgInfoSentAt');
+        const readCount = document.getElementById('msgInfoReadCount');
+        const unreadCount = document.getElementById('msgInfoUnreadCount');
+
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        preview.textContent = 'Loading message info...';
+        readList.innerHTML = '<div class="py-4 text-center text-xs text-slate-400">Loading read receipts...</div>';
+        unreadList.innerHTML = '';
+
+        fetch(`/projects/{{ $project->id }}/messages/${messageId}/info`)
+            .then(res => res.json())
+            .then(data => {
+                preview.textContent = data.message_text;
+                sentAt.textContent = `Sent by ${data.sender_name} on ${data.sent_at}`;
+                readCount.textContent = data.read_by.length;
+                unreadCount.textContent = data.not_read_yet.length;
+
+                // Populate Read By
+                if (data.read_by.length === 0) {
+                    readList.innerHTML = '<div class="py-2 text-xs text-slate-400 italic">No one has seen this message yet.</div>';
+                } else {
+                    readList.innerHTML = '';
+                    data.read_by.forEach(item => {
+                        const row = document.createElement('div');
+                        row.className = 'pt-2 flex items-center justify-between text-xs';
+                        row.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">
+                                    ${item.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <span class="font-bold text-slate-800">${item.name}</span>
+                                    <span class="text-[10px] text-slate-400 block">${item.seen_at_relative}</span>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="text-[#53bdeb] font-bold text-xs">✓✓</span>
+                                <span class="text-[10px] text-slate-600 font-semibold block">${item.seen_at}</span>
+                            </div>
+                        `;
+                        readList.appendChild(row);
+                    });
+                }
+
+                // Populate Not Read Yet
+                if (data.not_read_yet.length === 0) {
+                    unreadList.innerHTML = '<div class="py-2 text-xs text-emerald-700 italic font-semibold">Seen by everyone in this project! 🎉</div>';
+                } else {
+                    unreadList.innerHTML = '';
+                    data.not_read_yet.forEach(item => {
+                        const row = document.createElement('div');
+                        row.className = 'pt-2 flex items-center justify-between text-xs text-slate-500';
+                        row.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                    ${item.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span class="font-medium text-slate-700">${item.name}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-semibold">Delivered</span>
+                        `;
+                        unreadList.appendChild(row);
+                    });
+                }
+            })
+            .catch(err => {
+                preview.textContent = 'Error loading details.';
+            });
+    }
+
+    function closeMessageInfoModal() {
+        const modal = document.getElementById('messageInfoModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
     // Modals
     function openAddTaskModal() {
         document.getElementById('addTaskModal').classList.remove('hidden');
@@ -1024,11 +1225,12 @@
             closeProjectInfoModal();
             closeAddMemberModal();
             closeEditProjectModal();
+            closeMessageInfoModal();
         }
     });
 
     // Backdrop click handlers
-    ['addTaskModal', 'editTaskModal', 'projectInfoModal', 'addMemberModal', 'editProjectModal'].forEach(id => {
+    ['addTaskModal', 'editTaskModal', 'projectInfoModal', 'addMemberModal', 'editProjectModal', 'messageInfoModal'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('click', function(e) {

@@ -86,9 +86,11 @@ class ProjectTaskController extends Controller
         $userId = Auth::id();
         $user = Auth::user();
 
-        // Only the assigned user (or Admin) can update the task
-        if (!$user->isAdmin() && $projectTask->assigned_to != $userId) {
-            abort(403, 'Only the assigned staff member can update this task.');
+        // Only the task creator (or Admin) can edit task details
+        $canEdit = $user->isAdmin() || $projectTask->created_by == $userId;
+
+        if (!$canEdit) {
+            abort(403, 'Only the person who created this task can edit its details.');
         }
 
         $validated = $request->validate([
