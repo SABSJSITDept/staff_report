@@ -22,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
 
+        if (str_starts_with(config('app.url'), 'https://') || app()->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         view()->composer('*', function ($view) {
             if (auth()->check()) {
                 $user = auth()->user();
