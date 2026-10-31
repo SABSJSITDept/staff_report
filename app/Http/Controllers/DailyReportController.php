@@ -764,15 +764,18 @@ class DailyReportController extends Controller
         $ext = null;
         $fileSize = null;
 
+        $authUser = Auth::user();
+        $staffRecord = \App\Models\Staff\StaffModel::where('user_id', $authUser->id)->first();
+        $staffDetailId = $staffRecord ? $staffRecord->id : null;
+        $staffName = $staffRecord ? $staffRecord->name : $authUser->name;
+
         if ($request->hasFile('output_file')) {
             $request->validate([
                 'output_file' => 'file|mimes:jpg,jpeg,png,webp,gif,pdf,xls,xlsx,csv,doc,docx,txt,zip|max:51200'
             ]);
 
             $file = $request->file('output_file');
-            $staff = $task->dailyReport->staff ?? Auth::user()->staff ?? \App\Models\Staff\StaffModel::where('user_id', Auth::id())->first();
-            $staffName = $staff ? $staff->name : Auth::user()->name;
-            $safeStaffName = trim(preg_replace('/[\/\\\\:*?"<>|]/', '', $staffName)) ?: ('staff_' . Auth::id());
+            $safeStaffName = trim(preg_replace('/[\/\\\\:*?"<>|]/', '', $staffName)) ?: ('staff_' . $authUser->id);
             $currentMonth = now()->format('F');
             $folderPath = "task_outputs/{$safeStaffName}/{$currentMonth}";
 
@@ -786,12 +789,10 @@ class DailyReportController extends Controller
             $storedPath = $file->storeAs($folderPath, $fileName, 'public');
         }
 
-        $staff = $task->dailyReport->staff ?? Auth::user()->staff ?? \App\Models\Staff\StaffModel::where('user_id', Auth::id())->first();
-
         $outputRecord = DailyReportTaskOutput::create([
             'daily_report_task_id' => $task->id,
-            'user_id' => Auth::id(),
-            'staff_id' => $staff ? $staff->id : null,
+            'user_id' => $authUser->id,
+            'staff_id' => $staffDetailId,
             'action_type' => $actionType,
             'comment' => $comment,
             'file_path' => $storedPath,
