@@ -77,7 +77,29 @@ class TaskCommentController extends Controller
             ];
         });
 
-        $allActivity = $comments->concat($systemEvents)->sortBy('created_at_raw')->values()->map(function ($item) {
+        $outputs = \App\Models\DailyReportTaskOutput::with('user')->whereIn('daily_report_task_id', $taskIds)->get()->map(function ($o) {
+            $typeLabel = $o->action_type === 'pause' ? '⏸ Work Output (Paused)' : '⏹ Work Output (Completed)';
+            $commentBody = "{$typeLabel}: {$o->comment}";
+            if ($o->file_name) {
+                $commentBody .= "\n📎 Attached: {$o->file_name}";
+            }
+            return [
+                'id' => 'out_' . $o->id,
+                'user_name' => $o->user->name ?? 'Staff',
+                'user_role' => $o->user->role ?? 'staff',
+                'comment' => $commentBody,
+                'file_name' => $o->file_name,
+                'file_url' => $o->file_url,
+                'file_type' => $o->file_type,
+                'created_at_raw' => $o->created_at,
+                'created_at' => $o->created_at->format('d M Y, h:i A'),
+                'is_own' => $o->user_id === Auth::id(),
+                'is_system' => false,
+                'is_output' => true
+            ];
+        });
+
+        $allActivity = $comments->concat($systemEvents)->concat($outputs)->sortBy('created_at_raw')->values()->map(function ($item) {
             unset($item['created_at_raw']);
             return $item;
         });

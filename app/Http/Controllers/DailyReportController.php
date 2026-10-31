@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DailyReport;
 use App\Models\DailyReportTask;
+use App\Models\DailyReportTaskOutput;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +32,7 @@ class DailyReportController extends Controller
         $user = Auth::user();
         $isHod = $user->role === 'staff' && $user->staff && $user->staff->isHod();
 
-        // Staff sirf apni khud ki reports dekh sakta hai, unless HOD
+        // Staff can only view their own reports, unless HOD
         if ($user->role === 'staff') {
             if ($isHod) {
                 $deptId = $user->staff->managedDepartment->id;
@@ -215,7 +216,7 @@ class DailyReportController extends Controller
         $reports = $query->get();
 
         if ($reports->isEmpty()) {
-            return back()->with('error', 'Chune gaye dates ke liye koi data nahi mila.');
+            return back()->with('error', 'No data found for the selected dates.');
         }
 
         if ($type === 'pdf') {
@@ -339,10 +340,10 @@ class DailyReportController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Report successfully save ho gayi!', 'id' => $report->id]);
+            return response()->json(['success' => true, 'message' => 'Daily report saved successfully!', 'id' => $report->id]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Kuch galat hua: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Something went wrong: ' . $e->getMessage()], 500);
         }
     }
 
@@ -411,7 +412,7 @@ class DailyReportController extends Controller
     {
         if (Auth::user()->role === 'staff' && $dailyReport->staff_id !== Auth::id()) {
             // HODs shouldn't be editing their staff's reports, only viewing. So strict check here is fine.
-            abort(403, 'Aap sirf apni khud ki report edit kar sakte hain.');
+            abort(403, 'You can only edit your own reports.');
         }
         $dailyReport->load('tasks');
         return view('DailyReport.DailyReportCreate', compact('dailyReport'));
@@ -494,10 +495,10 @@ class DailyReportController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Report update ho gayi!']);
+            return response()->json(['success' => true, 'message' => 'Daily report updated successfully!']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Kuch galat hua: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Something went wrong: ' . $e->getMessage()], 500);
         }
     }
 
@@ -508,7 +509,7 @@ class DailyReportController extends Controller
         }
         $dailyReport->tasks()->delete();
         $dailyReport->delete();
-        return response()->json(['success' => true, 'message' => 'Report delete ho gayi!']);
+        return response()->json(['success' => true, 'message' => 'Daily report deleted successfully!']);
     }
 
     public function getLastTasks(Request $request)
@@ -557,7 +558,7 @@ class DailyReportController extends Controller
         ]);
     }
 
-    private function sumTimeStrings($time1, $time2)
+    public static function sumTimeStrings($time1, $time2)
     {
         $totalMinutes = 0;
         foreach ([$time1, $time2] as $timeStr) {
@@ -576,12 +577,128 @@ class DailyReportController extends Controller
         return ($h > 0 ? $h . 'h ' : '') . ($m > 0 ? $m . 'm' : '');
     }
 
+    /**
+     * Automatically stops any in-progress tasks that exceeded:
+     * 1. 2 hours of continuous running.
+     * 2. 1:00 PM (13:00) midday cutoff.
+     * 3. 6:30 PM (18:30) evening cutoff.
+     */
+    public static function checkAndAutoStopTasks($userId = null): int
+    {
+        $query = DailyReportTask::where('status', 'in_progress');
+        if ($userId) {
+            $query->whereHas('dailyReport', function($q) use ($userId) {
+                $q->where('staff_id', $userId);
+            });
+        }
+
+        $activeTasks = $query->with(['sessions', 'dailyReport'])->get();
+        $stoppedCount = 0;
+
+        foreach ($activeTasks as $task) {
+            $session = $task->sessions()->whereNull('end_time')->latest('start_time')->first();
+            $sessionStart = $session && $session->start_time ? $session->start_time : ($task->start_time ?: $task->created_at);
+
+            if (!$sessionStart) {
+                continue;
+            }
+
+            $deadlineInfo = DailyReportTask::calculateAutoStopDeadline($sessionStart);
+            $deadline = $deadlineInfo['deadline'];
+            $reason = $deadlineInfo['reason'];
+
+            if (now()->greaterThanOrEqualTo($deadline)) {
+                $diffInMinutes = max(1, $deadline->diffInMinutes($sessionStart));
+                $hours = floor($diffInMinutes / 60);
+                $minutes = $diffInMinutes % 60;
+
+                $segmentTime = '';
+                if ($hours > 0) $segmentTime .= $hours . 'h ';
+                if ($minutes > 0) $segmentTime .= $minutes . 'm';
+                if ($segmentTime === '') $segmentTime = '1m';
+
+                $totalTime = self::sumTimeStrings($task->time_spend, $segmentTime);
+                $timestamp = $deadline->format('d M, h:i A');
+                $logNote = "[Auto-Stopped - {$timestamp}] {$reason}. Work outcome required.";
+                $newDescription = $task->description ? $task->description . "\n" . $logNote : $logNote;
+
+                $task->update([
+                    'status' => 'completed',
+                    'end_time' => $deadline,
+                    'time_spend' => trim($totalTime),
+                    'description' => $newDescription,
+                ]);
+
+                if ($session) {
+                    $session->update(['end_time' => $deadline]);
+                }
+
+                // Create persistent in-app / push notification for staff
+                $staffUserId = $task->dailyReport->staff_id;
+                $alreadyNotified = \App\Models\Notification::where('user_id', $staffUserId)
+                    ->where('title', 'Task Auto-Stopped')
+                    ->where('message', 'like', "%'{$task->task_title}'%")
+                    ->where('created_at', '>=', now()->subMinutes(10))
+                    ->exists();
+
+                if (!$alreadyNotified) {
+                    \App\Models\Notification::create([
+                        'user_id' => $staffUserId,
+                        'title' => 'Task Auto-Stopped',
+                        'message' => "Task '{$task->task_title}' has stopped ({$reason}). Please submit your work outcome.",
+                        'url' => route('staff.track-task'),
+                        'type' => 'task_auto_stopped',
+                        'is_read' => false
+                    ]);
+                }
+
+                $stoppedCount++;
+            }
+        }
+
+        return $stoppedCount;
+    }
+
+    public function checkAutoStop()
+    {
+        $stoppedCount = self::checkAndAutoStopTasks(Auth::id());
+        $activeTask = DailyReportTask::whereHas('dailyReport', function($q) {
+            $q->where('staff_id', Auth::id())->whereDate('report_date', today());
+        })->where('status', 'in_progress')->first();
+
+        $pendingTask = DailyReportTask::whereHas('dailyReport', function($q) {
+            $q->where('staff_id', Auth::id())->whereDate('report_date', today());
+        })->get()->first(function($t) {
+            return $t->needsStopOutput();
+        });
+
+        return response()->json([
+            'success' => true,
+            'stopped_count' => $stoppedCount,
+            'has_active' => (bool)$activeTask,
+            'active_task' => $activeTask ? [
+                'id' => $activeTask->id,
+                'task_title' => $activeTask->task_title,
+                'deadline_info' => $activeTask->getAutoStopDeadlineInfo()
+            ] : null,
+            'has_pending_output' => (bool)$pendingTask,
+            'pending_task' => $pendingTask ? [
+                'id' => $pendingTask->id,
+                'task_title' => $pendingTask->task_title,
+                'action_type' => 'stop',
+                'message' => "Task '{$pendingTask->task_title}' was stopped and requires work outcome. Please submit its outcome before starting a new task."
+            ] : null
+        ]);
+    }
+
     public function startTask(Request $request)
     {
         $request->validate([
             'task_title' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
+
+        self::checkAndAutoStopTasks(Auth::id());
 
         // Prevent starting if another task is already in_progress
         $activeTask = DailyReportTask::whereHas('dailyReport', function($q) {
@@ -591,8 +708,26 @@ class DailyReportController extends Controller
         if ($activeTask) {
             return response()->json([
                 'success' => false, 
-                'message' => 'Aapka ek task pehle se live chal raha hai. Usse pause ya end karein pehle!'
+                'message' => 'You already have an active task in progress. Please pause or end it first!'
             ], 400);
+        }
+
+        // Prevent starting if any stopped task has a pending outcome
+        $pendingTask = DailyReportTask::whereHas('dailyReport', function($q) {
+            $q->where('staff_id', Auth::id())->whereDate('report_date', today());
+        })->get()->first(function($t) {
+            return $t->needsStopOutput();
+        });
+
+        if ($pendingTask) {
+            return response()->json([
+                'success' => false,
+                'require_output' => true,
+                'pending_task_id' => $pendingTask->id,
+                'pending_task_title' => $pendingTask->task_title,
+                'action_type' => 'stop',
+                'message' => "Task '{$pendingTask->task_title}' was stopped and requires work outcome. Please submit its outcome before starting a new task."
+            ], 422);
         }
 
         // Find today's report for the staff, or create one
@@ -616,14 +751,72 @@ class DailyReportController extends Controller
         return response()->json(['success' => true, 'message' => 'Task started successfully', 'task' => $task]);
     }
 
-    public function endTask(Request $request, DailyReportTask $task)
+    protected function handleTaskOutputSubmission(Request $request, DailyReportTask $task, string $actionType)
     {
-        $request->validate([
-            'description' => 'nullable|string',
+        $comment = trim($request->input('output_comment') ?? $request->input('comment') ?? $request->input('description') ?? '');
+        
+        if ($comment === '') {
+            return ['error' => 'Please specify the work outcome/remarks before stopping this task.'];
+        }
+
+        $storedPath = null;
+        $origName = null;
+        $ext = null;
+        $fileSize = null;
+
+        if ($request->hasFile('output_file')) {
+            $request->validate([
+                'output_file' => 'file|mimes:jpg,jpeg,png,webp,gif,pdf,xls,xlsx,csv,doc,docx,txt,zip|max:51200'
+            ]);
+
+            $file = $request->file('output_file');
+            $staff = $task->dailyReport->staff ?? Auth::user()->staff ?? \App\Models\Staff\StaffModel::where('user_id', Auth::id())->first();
+            $staffName = $staff ? $staff->name : Auth::user()->name;
+            $safeStaffName = trim(preg_replace('/[\/\\\\:*?"<>|]/', '', $staffName)) ?: ('staff_' . Auth::id());
+            $currentMonth = now()->format('F');
+            $folderPath = "task_outputs/{$safeStaffName}/{$currentMonth}";
+
+            $origName = $file->getClientOriginalName();
+            $ext = strtolower($file->getClientOriginalExtension());
+            $fileSize = $file->getSize();
+            $cleanBaseName = preg_replace('/[\/\\\\:*?"<>|]/', '', pathinfo($origName, PATHINFO_FILENAME));
+            $cleanBaseName = str_replace(' ', '_', $cleanBaseName);
+            $fileName = time() . '_' . $cleanBaseName . '.' . $ext;
+
+            $storedPath = $file->storeAs($folderPath, $fileName, 'public');
+        }
+
+        $staff = $task->dailyReport->staff ?? Auth::user()->staff ?? \App\Models\Staff\StaffModel::where('user_id', Auth::id())->first();
+
+        $outputRecord = DailyReportTaskOutput::create([
+            'daily_report_task_id' => $task->id,
+            'user_id' => Auth::id(),
+            'staff_id' => $staff ? $staff->id : null,
+            'action_type' => $actionType,
+            'comment' => $comment,
+            'file_path' => $storedPath,
+            'file_name' => $origName,
+            'file_type' => $ext,
+            'file_size' => $fileSize,
         ]);
 
+        return [
+            'output' => $outputRecord,
+            'comment' => $comment,
+            'file_name' => $origName,
+            'stored_path' => $storedPath
+        ];
+    }
+
+    public function endTask(Request $request, DailyReportTask $task)
+    {
         if ($task->dailyReport->staff_id !== Auth::id()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $submission = $this->handleTaskOutputSubmission($request, $task, 'stop');
+        if (isset($submission['error'])) {
+            return response()->json(['success' => false, 'message' => $submission['error']], 422);
         }
 
         $endTime = now();
@@ -645,10 +838,12 @@ class DailyReportController extends Controller
         }
 
         $newDescription = $task->description;
-        if ($request->description) {
-            $timestamp = now()->format('d M, h:i A');
-            $newDescription = $newDescription ? $newDescription . "\n[" . $timestamp . "] " . $request->description : "[" . $timestamp . "] " . $request->description;
+        $timestamp = now()->format('d M, h:i A');
+        $logNote = "[Completed - {$timestamp}] " . $submission['comment'];
+        if (!empty($submission['file_name'])) {
+            $logNote .= " (Attached: " . $submission['file_name'] . ")";
         }
+        $newDescription = $newDescription ? $newDescription . "\n" . $logNote : $logNote;
 
         $task->update([
             'description' => $newDescription,
@@ -662,7 +857,7 @@ class DailyReportController extends Controller
             $session->update(['end_time' => $endTime]);
         }
 
-        return response()->json(['success' => true, 'message' => 'Task completed successfully', 'task' => $task]);
+        return response()->json(['success' => true, 'message' => 'Task completed and output recorded successfully', 'task' => $task]);
     }
 
     public function assignTask(Request $request)
@@ -829,7 +1024,7 @@ class DailyReportController extends Controller
         $endTime = now();
         $startTime = $task->start_time ?: $task->created_at;
         
-        $diffInMinutes = $endTime->diffInMinutes($startTime);
+        $diffInMinutes = max(1, $endTime->diffInMinutes($startTime));
         $hours = floor($diffInMinutes / 60);
         $minutes = $diffInMinutes % 60;
         
@@ -839,16 +1034,9 @@ class DailyReportController extends Controller
         if ($segmentTime === '') $segmentTime = '1m';
 
         // Sum with existing time_spend
-        $totalTime = $this->sumTimeStrings($task->time_spend, $segmentTime);
-
-        $newDescription = $task->description;
-        if ($request->description) {
-            $timestamp = now()->format('d M, h:i A');
-            $newDescription = $newDescription ? $newDescription . "\n[" . $timestamp . "] " . $request->description : "[" . $timestamp . "] " . $request->description;
-        }
+        $totalTime = self::sumTimeStrings($task->time_spend, $segmentTime);
 
         $task->update([
-            'description' => $newDescription,
             'status' => 'paused',
             'time_spend' => trim($totalTime),
             'end_time' => null, // Just paused, not finished
@@ -862,6 +1050,31 @@ class DailyReportController extends Controller
         return response()->json(['success' => true, 'message' => 'Task paused successfully', 'task' => $task]);
     }
 
+    public function getTaskOutputs(DailyReportTask $task)
+    {
+        $outputs = $task->outputs()->with('user')->get()->map(function ($out) {
+            return [
+                'id' => $out->id,
+                'action_type' => $out->action_type,
+                'comment' => $out->comment,
+                'file_name' => $out->file_name,
+                'file_path' => $out->file_path,
+                'file_url' => $out->file_url,
+                'file_type' => $out->file_type,
+                'file_size' => $out->formatted_file_size,
+                'created_at' => $out->created_at->format('d M Y, h:i A'),
+                'user_name' => $out->user->name ?? 'Staff'
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'task_title' => $task->task_title,
+            'staff_name' => $task->dailyReport->staff->name ?? ($task->dailyReport->user->name ?? 'Staff'),
+            'outputs' => $outputs
+        ]);
+    }
+
     public function resumeTask(Request $request, DailyReportTask $task)
     {
         if ($task->dailyReport->staff_id !== Auth::id()) {
@@ -872,6 +1085,8 @@ class DailyReportController extends Controller
             return response()->json(['success' => false, 'message' => 'Only paused tasks can be resumed'], 400);
         }
 
+        self::checkAndAutoStopTasks(Auth::id());
+
         // Before resuming, ensure there is no other live/in_progress task!
         $activeTask = DailyReportTask::whereHas('dailyReport', function($q) {
             $q->where('staff_id', Auth::id());
@@ -880,7 +1095,7 @@ class DailyReportController extends Controller
         if ($activeTask) {
             return response()->json([
                 'success' => false, 
-                'message' => 'Aapka ek task pehle se live chal raha hai. Usse pause ya end karein pehle!'
+                'message' => 'You already have an active task in progress. Please pause or end it first!'
             ], 400);
         }
 
@@ -896,11 +1111,51 @@ class DailyReportController extends Controller
         return response()->json(['success' => true, 'message' => 'Task resumed successfully', 'task' => $task]);
     }
 
+    public function submitTaskOutput(Request $request, DailyReportTask $task)
+    {
+        if ($task->dailyReport->staff_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $actionType = $request->input('action_type', $task->status === 'completed' ? 'stop' : 'pause');
+        $submission = $this->handleTaskOutputSubmission($request, $task, $actionType);
+
+        if (isset($submission['error'])) {
+            return response()->json(['success' => false, 'message' => $submission['error']], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Work output submitted successfully!',
+            'output' => $submission['output']
+        ]);
+    }
+
     public function addOtherTask(Request $request)
     {
         $request->validate([
             'description' => 'required|string',
         ]);
+
+        self::checkAndAutoStopTasks(Auth::id());
+
+        // Prevent adding other task if any task has pending outcome
+        $pendingTask = DailyReportTask::whereHas('dailyReport', function($q) {
+            $q->where('staff_id', Auth::id())->whereDate('report_date', today());
+        })->get()->first(function($t) {
+            return $t->needsStopOutput();
+        });
+
+        if ($pendingTask) {
+            return response()->json([
+                'success' => false,
+                'require_output' => true,
+                'pending_task_id' => $pendingTask->id,
+                'pending_task_title' => $pendingTask->task_title,
+                'action_type' => 'stop',
+                'message' => "Task '{$pendingTask->task_title}' was stopped and requires work outcome. Please submit its outcome first."
+            ], 422);
+        }
 
         $today = now()->toDateString();
         $report = DailyReport::firstOrCreate(

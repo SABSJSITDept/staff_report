@@ -99,6 +99,7 @@ class StaffDashboardController extends Controller
 
     public function trackTask()
     {
+        \App\Http\Controllers\DailyReportController::checkAndAutoStopTasks(Auth::id());
         \App\Http\Controllers\DailyReportController::autoPauseMidnightTasks(Auth::id());
         \App\Http\Controllers\DailyReportController::autoCarryForwardPaused(Auth::id());
 
@@ -121,13 +122,21 @@ class StaffDashboardController extends Controller
               ->whereDate('report_date', today());
         })->where('status', 'in_progress')->first();
 
-        $todayTasks = $todayReport ? $todayReport->tasks()->withCount('comments')->orderBy('created_at', 'asc')->get() : collect();
+        $activeTaskDeadline = $activeTask ? $activeTask->getAutoStopDeadlineInfo() : null;
+
+        $todayTasks = $todayReport ? $todayReport->tasks()->withCount(['comments', 'outputs'])->with(['outputs', 'sessions'])->orderBy('created_at', 'asc')->get() : collect();
+
+        $pendingOutputTask = $todayTasks->first(function($t) {
+            return $t->needsStopOutput();
+        });
 
         return view('Staff.track-task', [
             'staffDetail' => $staffDetail,
             'todayReport' => $todayReport,
             'activeTask' => $activeTask,
-            'todayTasks' => $todayTasks
+            'activeTaskDeadline' => $activeTaskDeadline,
+            'todayTasks' => $todayTasks,
+            'pendingOutputTask' => $pendingOutputTask,
         ]);
     }
 

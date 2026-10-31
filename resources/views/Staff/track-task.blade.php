@@ -22,6 +22,43 @@
     </div>
 </div>
 
+@if(isset($pendingOutputTask) && $pendingOutputTask)
+    <div class="mb-6 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-amber-950">Work Outcome Submission Required</h4>
+                <p class="text-xs font-semibold text-amber-800/90 mt-0.5">
+                    Task <strong>"{{ $pendingOutputTask->task_title }}"</strong> was stopped and requires work outcome. You cannot start a new task until this outcome is submitted.
+                </p>
+            </div>
+        </div>
+        <button type="button" onclick="openTaskActionModal({{ $pendingOutputTask->id }}, 'stop', '{{ addslashes($pendingOutputTask->task_title) }}')"
+                class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 whitespace-nowrap flex items-center gap-2">
+            <span>Submit Outcome Now</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+        </button>
+    </div>
+@endif
+
+{{-- Browser Notification Permission Banner --}}
+<div id="notification-permission-banner" class="hidden mb-4 p-3.5 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-indigo-900 shadow-sm">
+    <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 text-sm font-bold shadow-xs">
+            🔔
+        </div>
+        <div>
+            <span class="font-bold">Enable Desktop Notifications:</span>
+            <span class="text-indigo-700 ml-1">Get instant desktop alerts and window focus when your task stops (at 1:00 PM, 6:30 PM, or after 2 hours).</span>
+        </div>
+    </div>
+    <button type="button" onclick="requestBrowserNotificationPermission(true)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shrink-0 shadow-sm text-xs">
+        Enable Notifications
+    </button>
+</div>
+
 {{-- Live Task Tracker Widget --}}
 <div class="mb-6">
     <div class="bg-white rounded-2xl shadow-sm border {{ $activeTask ? 'border-green-300' : 'border-gray-100' }} overflow-hidden relative">
@@ -64,36 +101,47 @@
                                       class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-green-400 focus:outline-none transition resize-none"></textarea>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between pt-2">
-                        <div class="text-sm font-semibold text-green-700 flex items-center gap-2">
-                            <span class="relative flex h-3 w-3">
-                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                              <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                            </span>
-                            Started at: {{ \Carbon\Carbon::parse($activeTask->start_time)->format('h:i A') }}
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="text-sm font-semibold text-green-700 flex items-center gap-2">
+                                <span class="relative flex h-3 w-3">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                </span>
+                                Started: {{ \Carbon\Carbon::parse($activeTask->start_time)->format('h:i A') }}
+                            </div>
+                            @if(isset($activeTaskDeadline) && $activeTaskDeadline)
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-900 text-xs font-bold border border-amber-300 shadow-xs" title="Auto-stop scheduled: {{ $activeTaskDeadline['reason'] }}">
+                                    <svg class="w-3.5 h-3.5 text-amber-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Auto-stops in:</span>
+                                    <span id="active-task-countdown" class="font-mono text-amber-950 font-extrabold tracking-wide">--:--:--</span>
+                                    <span class="text-[10px] text-amber-700 font-semibold uppercase">({{ $activeTaskDeadline['label'] }})</span>
+                                </div>
+                            @endif
                         </div>
                         <div class="flex items-center gap-3">
                             <button type="button" onclick="logActiveTaskUpdate({{ $activeTask->id }})" id="log-task-btn"
-                                    class="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                                    class="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                                 </svg>
                                 Log Update
                             </button>
-                            <button type="button" onclick="pauseActiveTask({{ $activeTask->id }})" id="pause-task-btn"
-                                    class="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                            <button type="button" onclick="pauseTask({{ $activeTask->id }})" id="pause-task-btn"
+                                    class="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+                                    title="Pause task without requiring outcome">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                                 </svg>
-                                Pause Task
+                                <span>Pause Task</span>
                             </button>
-                            <button type="submit" id="end-task-btn"
-                                    class="flex items-center gap-2 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
+                            <button type="button" onclick="openTaskActionModal({{ $activeTask->id }}, 'stop', '{{ addslashes($activeTask->task_title) }}')" id="end-task-btn"
+                                    class="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition shadow-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
                                 </svg>
-                                End Task
+                                <span>End Task</span>
                             </button>
                         </div>
                     </div>
@@ -217,6 +265,12 @@
                                                 <span class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full leading-none">{{ $t->comments_count }}</span>
                                             @endif
                                         </button>
+                                        <button type="button" onclick="openOutputsModal({{ $t->id }})" class="relative text-amber-500 hover:text-amber-700 shrink-0 transition" title="View Work Outputs & Attachments">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            @if(($t->outputs_count ?? $t->outputs->count()) > 0)
+                                                <span class="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full leading-none">{{ $t->outputs_count ?? $t->outputs->count() }}</span>
+                                            @endif
+                                        </button>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-gray-500 max-w-[300px] whitespace-pre-wrap leading-relaxed" title="{{ $t->description }}">{{ $t->description ?: '—' }}</td>
@@ -250,10 +304,17 @@
                                             Paused
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                            Completed
-                                        </span>
+                                        @if($t->needsStopOutput())
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse" title="Task stopped. Work outcome submission required.">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                Outcome Pending
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                                Completed
+                                            </span>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-center">
@@ -266,7 +327,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" />
                                                 </svg>
                                             </button>
-                                            <button type="button" onclick="endPausedTaskDirect({{ $t->id }})"
+                                            <button type="button" onclick="openTaskActionModal({{ $t->id }}, 'stop', '{{ addslashes($t->task_title) }}')"
                                                     class="inline-flex items-center justify-center p-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg border border-red-200 transition shadow-xs"
                                                     title="End Task">
                                                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -276,14 +337,14 @@
                                         </div>
                                     @elseif($t->status === 'in_progress')
                                         <div class="flex items-center justify-center gap-2">
-                                            <button type="button" onclick="pauseActiveTask({{ $t->id }})"
+                                            <button type="button" onclick="pauseTask({{ $t->id }})"
                                                     class="inline-flex items-center justify-center p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-200 transition shadow-xs"
                                                     title="Pause Task">
                                                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                                                 </svg>
                                             </button>
-                                            <button type="button" onclick="endActiveTaskDirect({{ $t->id }})"
+                                            <button type="button" onclick="openTaskActionModal({{ $t->id }}, 'stop', '{{ addslashes($t->task_title) }}')"
                                                     class="inline-flex items-center justify-center p-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg border border-red-200 transition shadow-xs"
                                                     title="End Task">
                                                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -292,7 +353,21 @@
                                             </button>
                                         </div>
                                     @else
-                                        <span class="text-xs text-gray-400 font-semibold">—</span>
+                                        @if($t->needsStopOutput())
+                                            <button type="button" onclick="openTaskActionModal({{ $t->id }}, 'stop', '{{ addslashes($t->task_title) }}')"
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-xs animate-pulse"
+                                                    title="Submit Outcome for Stopped Task">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                                                <span>Submit Outcome</span>
+                                            </button>
+                                        @else
+                                            <button type="button" onclick="restartCompletedTask('{{ addslashes($t->task_title) }}')"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 border border-slate-200 rounded-lg text-[11px] font-semibold transition"
+                                                    title="Start tracking this task again">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                                <span>Start Again</span>
+                                            </button>
+                                        @endif
                                     @endif
                                 </td>
                             </tr>
@@ -398,6 +473,130 @@
                     <svg class="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                 </button>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- Task Action Modal (Submit Outcome on Stop) --}}
+<div id="task-action-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeTaskActionModal()"></div>
+
+    <div class="relative w-full max-w-lg bg-white shadow-2xl rounded-2xl overflow-hidden border border-slate-200 transform transition-all my-8 z-10">
+        {{-- Header --}}
+        <div id="action-modal-header" class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center gap-3">
+                <div id="action-modal-icon-container" class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm bg-red-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                </div>
+                <div>
+                    <h3 id="action-modal-title" class="text-base font-bold text-slate-800">End Task — Submit Work Outcome</h3>
+                    <p id="action-modal-subtitle" class="text-xs text-slate-500 font-medium">Please report your work outcome before stopping this task</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeTaskActionModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-200/50 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {{-- Form --}}
+        <form id="task-action-form" onsubmit="submitTaskAction(event)" class="p-6 space-y-4">
+            <input type="hidden" id="action-task-id">
+            <input type="hidden" id="action-type" value="stop">
+
+            {{-- Task Title Info Box --}}
+            <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <div class="min-w-0 flex-1">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Task Title</div>
+                    <div id="action-modal-task-title" class="text-xs font-bold text-slate-800 truncate"></div>
+                </div>
+            </div>
+
+            {{-- Comment / Work Output --}}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Work Outcome / Remarks <span class="text-red-500">*</span>
+                </label>
+                <textarea id="action-modal-comment" rows="3" required
+                          placeholder="Describe the outcome, work results, or progress achieved before ending this task..."
+                          class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition resize-none"></textarea>
+                <p class="text-[11px] text-slate-400 mt-1">Please summarize what was completed or achieved in this work session.</p>
+            </div>
+
+            {{-- File Upload --}}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Upload Output File (Photo / Excel / PDF)</span>
+                    <span class="text-[11px] font-normal text-slate-400">Optional</span>
+                </label>
+                <div class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-4 transition-all bg-slate-50/50 hover:bg-indigo-50/20 text-center relative cursor-pointer"
+                     onclick="document.getElementById('action-modal-file').click()">
+                    <input type="file" id="action-modal-file" name="output_file"
+                           accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx,.zip"
+                           class="hidden" onchange="handleActionFileSelect(this)">
+                    <div id="action-file-placeholder" class="flex flex-col items-center">
+                        <svg class="w-8 h-8 text-slate-400 mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+                        </svg>
+                        <p class="text-xs font-semibold text-slate-700">Click to upload file</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Images (PNG, JPG), Excel (XLSX, CSV), PDF or Docs (up to 50MB)</p>
+                    </div>
+                    <div id="action-file-preview" class="hidden flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2.5 text-left">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-bold text-xs" id="action-file-icon">
+                                📄
+                            </div>
+                            <div class="min-w-0">
+                                <p id="action-file-name" class="text-xs font-semibold text-slate-800 truncate"></p>
+                                <p id="action-file-size" class="text-[10px] text-slate-400"></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); clearActionFile();" class="text-slate-400 hover:text-red-500 p-1 rounded transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Footer Buttons --}}
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeTaskActionModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                    Cancel
+                </button>
+                <button type="submit" id="action-modal-submit-btn" class="flex items-center gap-2 px-5 py-2 text-xs font-bold text-white rounded-xl transition shadow-sm">
+                    {{-- Text injected via JS --}}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Task Outputs & Files Modal --}}
+<div id="outputs-modal" class="fixed inset-0 z-[105] hidden flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeOutputsModal()"></div>
+
+    <div class="relative w-full max-w-2xl bg-white shadow-2xl rounded-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[85vh] my-8 z-10">
+        {{-- Header --}}
+        <div class="bg-white px-6 py-4.5 border-b border-slate-100 flex items-center justify-between shrink-0 shadow-xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/60 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Task Work Outputs & Files</h3>
+                    <p id="outputs-task-name" class="text-xs text-slate-500 font-medium"></p>
+                </div>
+            </div>
+            <button type="button" onclick="closeOutputsModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {{-- Outputs List Body --}}
+        <div id="outputs-list" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+            <!-- Injected via JS -->
         </div>
     </div>
 </div>
@@ -525,8 +724,18 @@
                     description: document.getElementById('start_task_desc').value,
                 })
             }).then(res => res.json()).then(data => {
-                if(data.success) location.reload();
-                else { showToast(data.message, 'error'); btn.disabled = false; btn.innerHTML = 'Start Task'; }
+                if(data.success) {
+                    location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Start Task';
+                    if (data.require_output && data.pending_task_id) {
+                        showToast(data.message, 'warning');
+                        openTaskActionModal(data.pending_task_id, 'stop', data.pending_task_title || '');
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                }
             }).catch(err => {
                 showToast('An error occurred.', 'error'); btn.disabled = false; btn.innerHTML = 'Start Task';
             });
@@ -537,27 +746,10 @@
     if (endForm) {
         endForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const btn = document.getElementById('end-task-btn');
             const taskId = document.getElementById('active_task_id').value;
-            btn.disabled = true;
-            btn.innerHTML = 'Ending...';
-
-            fetch('{{ url("daily-report/task") }}/' + taskId + '/end', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    description: document.getElementById('end_task_desc').value,
-                })
-            }).then(res => res.json()).then(data => {
-                if(data.success) location.reload();
-                else { showToast(data.message, 'error'); btn.disabled = false; btn.innerHTML = 'End Task'; }
-            }).catch(err => {
-                showToast('An error occurred.', 'error'); btn.disabled = false; btn.innerHTML = 'End Task';
-            });
+            const activeTitleEl = document.querySelector('input[readonly].cursor-not-allowed');
+            const title = activeTitleEl ? activeTitleEl.value : 'Active Task';
+            openTaskActionModal(taskId, 'stop', title);
         });
     }
 
@@ -580,15 +772,25 @@
                     description: document.getElementById('other_task_desc').value,
                 })
             }).then(res => res.json()).then(data => {
-                if(data.success) location.reload();
-                else { showToast(data.message, 'error'); btn.disabled = false; btn.innerHTML = 'Add to Other Task'; }
+                if(data.success) {
+                    location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Add to Other Task';
+                    if (data.require_output && data.pending_task_id) {
+                        showToast(data.message, 'warning');
+                        openTaskActionModal(data.pending_task_id, 'stop', data.pending_task_title || '');
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                }
             }).catch(err => {
                 showToast('An error occurred.', 'error'); btn.disabled = false; btn.innerHTML = 'Add to Other Task';
             });
         });
     }
 
-    // Pause Active Task
+    // Log Active Task Update without pausing
     function logActiveTaskUpdate(taskId) {
         const descInput = document.getElementById('end_task_desc');
         const descValue = descInput ? descInput.value.trim() : '';
@@ -629,36 +831,190 @@
         });
     }
 
-    // Pause Active Task
-    function pauseActiveTask(taskId) {
-        showConfirmToast('Do you really want to pause this task?', function() {
-            const btn = document.getElementById('pause-task-btn');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = 'Pausing...';
+    // Modal Control: Task Action (Pause / End Task with Output & File)
+    function openTaskActionModal(taskId, action, taskTitle = '') {
+        document.getElementById('action-task-id').value = taskId;
+        document.getElementById('action-type').value = action;
+        
+        if (!taskTitle) {
+            const activeTitleEl = document.querySelector('input[readonly].cursor-not-allowed');
+            taskTitle = activeTitleEl ? activeTitleEl.value : 'Task #' + taskId;
+        }
+        document.getElementById('action-modal-task-title').textContent = taskTitle;
+
+        // Pre-fill comment if user typed in top widget box
+        const topDescInput = document.getElementById('end_task_desc');
+        const commentInput = document.getElementById('action-modal-comment');
+        if (topDescInput && topDescInput.value.trim()) {
+            commentInput.value = topDescInput.value.trim();
+        } else {
+            commentInput.value = '';
+        }
+
+        clearActionFile();
+
+        const titleEl = document.getElementById('action-modal-title');
+        const subtitleEl = document.getElementById('action-modal-subtitle');
+        const iconContainer = document.getElementById('action-modal-icon-container');
+        const submitBtn = document.getElementById('action-modal-submit-btn');
+
+        titleEl.textContent = 'End Task — Submit Work Outcome';
+        subtitleEl.textContent = 'Please specify the work outcome, results, or remarks before stopping this task';
+        iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm bg-red-500';
+        iconContainer.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>`;
+        submitBtn.className = 'flex items-center gap-2 px-5 py-2 text-xs font-bold text-white rounded-xl transition shadow-sm bg-red-600 hover:bg-red-700';
+        submitBtn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <span>Confirm & End Task</span>
+        `;
+
+        document.getElementById('task-action-modal').classList.remove('hidden');
+        setTimeout(() => commentInput.focus(), 100);
+    }
+
+    function closeTaskActionModal() {
+        document.getElementById('task-action-modal').classList.add('hidden');
+        const submitBtn = document.getElementById('action-modal-submit-btn');
+        if (submitBtn) submitBtn.disabled = false;
+    }
+
+    function handleActionFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            document.getElementById('action-file-placeholder').classList.add('hidden');
+            document.getElementById('action-file-preview').classList.remove('hidden');
+            document.getElementById('action-file-name').textContent = file.name;
+            
+            let sizeStr = '';
+            if (file.size > 1048576) {
+                sizeStr = (file.size / 1048576).toFixed(2) + ' MB';
+            } else {
+                sizeStr = (file.size / 1024).toFixed(1) + ' KB';
             }
+            document.getElementById('action-file-size').textContent = sizeStr;
 
-            // Get description from end_task_desc if active task widget exists
-            const descInput = document.getElementById('end_task_desc');
-            const descValue = descInput ? descInput.value : '';
+            const ext = file.name.split('.').pop().toLowerCase();
+            let iconEmoji = '📄';
+            if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) iconEmoji = '🖼️';
+            else if (['xlsx', 'xls', 'csv'].includes(ext)) iconEmoji = '📊';
+            else if (['pdf'].includes(ext)) iconEmoji = '📑';
+            else if (['doc', 'docx'].includes(ext)) iconEmoji = '📝';
+            else if (['zip', 'rar'].includes(ext)) iconEmoji = '📦';
+            document.getElementById('action-file-icon').textContent = iconEmoji;
+        }
+    }
 
-            fetch('{{ url("daily-report/task") }}/' + taskId + '/pause', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    description: descValue
-                })
-            }).then(res => res.json()).then(data => {
-                if(data.success) location.reload();
-                else { showToast(data.message, 'error'); if (btn) { btn.disabled = false; btn.innerHTML = 'Pause Task'; } }
-            }).catch(err => {
-                showToast('An error occurred while pausing.', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = 'Pause Task'; }
-            });
+    function clearActionFile() {
+        const fileInput = document.getElementById('action-modal-file');
+        if (fileInput) fileInput.value = '';
+        document.getElementById('action-file-placeholder').classList.remove('hidden');
+        document.getElementById('action-file-preview').classList.add('hidden');
+    }
+
+    function submitTaskAction(e) {
+        e.preventDefault();
+        const taskId = document.getElementById('action-task-id').value;
+        const comment = document.getElementById('action-modal-comment').value.trim();
+        const fileInput = document.getElementById('action-modal-file');
+        const submitBtn = document.getElementById('action-modal-submit-btn');
+
+        if (!comment) {
+            showToast('Please enter the work outcome / remarks before proceeding.', 'error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span> Submitting...`;
+
+        const formData = new FormData();
+        formData.append('output_comment', comment);
+        formData.append('comment', comment);
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            formData.append('output_file', fileInput.files[0]);
+        }
+
+        const endpoint = '{{ url("daily-report/task") }}/' + taskId + '/end';
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Work outcome recorded successfully!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 600);
+            } else {
+                showToast(data.message || 'Failed to submit outcome.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Confirm & End Task</span>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('An unexpected network error occurred.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Confirm & End Task</span>`;
         });
+    }
+
+    // Direct Pause Task (No outcome required)
+    function pauseTask(taskId) {
+        const pauseBtn = document.getElementById('pause-task-btn');
+        if (pauseBtn) {
+            pauseBtn.disabled = true;
+            pauseBtn.innerHTML = `<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span> Pausing...`;
+        }
+
+        fetch('{{ url("daily-report/task") }}/' + taskId + '/pause', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Task paused successfully', 'success');
+                setTimeout(() => location.reload(), 400);
+            } else {
+                showToast(data.message || 'Failed to pause task.', 'error');
+                if (pauseBtn) {
+                    pauseBtn.disabled = false;
+                    pauseBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" /></svg> Pause Task`;
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('An error occurred while pausing.', 'error');
+            if (pauseBtn) {
+                pauseBtn.disabled = false;
+                pauseBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" /></svg> Pause Task`;
+            }
+        });
+    }
+
+    // Delegations for backward compatibility
+    function pauseActiveTask(taskId) {
+        pauseTask(taskId);
+    }
+
+    function endPausedTaskDirect(taskId) {
+        openTaskActionModal(taskId, 'stop');
+    }
+
+    function endActiveTaskDirect(taskId) {
+        openTaskActionModal(taskId, 'stop');
     }
 
     // Resume Task
@@ -671,57 +1027,141 @@
                 'Accept': 'application/json'
             }
         }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-            else { showToast(data.message, 'error'); }
+            if(data.success) {
+                location.reload();
+            } else {
+                if (data.require_output) {
+                    showToast(data.message, 'warning');
+                    openTaskActionModal(data.pending_task_id || taskId, 'stop', data.pending_task_title || '');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            }
         }).catch(err => {
             showToast('An error occurred while resuming.', 'error');
         });
     }
 
-    // End Paused Task
-    function endPausedTaskDirect(taskId) {
-        const desc = prompt('Enter final task description (optional):');
-        if (desc === null) return; // User cancelled prompt
+    function restartCompletedTask(title) {
+        const input = document.getElementById('start_task_title');
+        if (input) {
+            input.value = title;
+            input.focus();
+            const startBtn = document.getElementById('start-task-btn');
+            if (startBtn) {
+                startBtn.classList.add('ring-4', 'ring-indigo-300');
+                setTimeout(() => startBtn.classList.remove('ring-4', 'ring-indigo-300'), 1500);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
 
-        fetch('{{ url("daily-report/task") }}/' + taskId + '/end', {
-            method: 'POST',
+    // Modal Control: Task Outputs & Attached Files
+    function openOutputsModal(taskId) {
+        const list = document.getElementById('outputs-list');
+        list.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs flex flex-col items-center gap-2"><span class="animate-spin inline-block w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></span>Loading task outputs & files...</div>';
+        document.getElementById('outputs-task-name').textContent = 'Loading...';
+        document.getElementById('outputs-modal').classList.remove('hidden');
+
+        fetch(`{{ url("daily-report/task") }}/${taskId}/outputs`, {
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                description: desc
-            })
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-            else { showToast(data.message, 'error'); }
-        }).catch(err => {
-            showToast('An error occurred while ending the task.', 'error');
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showToast(data.message || 'Error loading outputs', 'error');
+                closeOutputsModal();
+                return;
+            }
+
+            document.getElementById('outputs-task-name').textContent = `${data.task_title} (${data.staff_name})`;
+
+            if (!data.outputs || data.outputs.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-12 flex flex-col items-center">
+                        <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                        </div>
+                        <p class="text-sm font-bold text-slate-700">No output records found</p>
+                        <p class="text-xs text-slate-400 mt-1">No outputs or files were submitted for this task yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = '';
+            data.outputs.forEach(out => {
+                const isPause = out.action_type === 'pause';
+                const badgeClass = isPause ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                const badgeLabel = isPause ? '⏸ Paused Output' : '⏹ Completed Output';
+
+                let fileHtml = '';
+                if (out.file_path && out.file_url) {
+                    const ext = (out.file_type || '').toLowerCase();
+                    let iconEmoji = '📄';
+                    let isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
+                    if (isImage) iconEmoji = '🖼️';
+                    else if (['xlsx', 'xls', 'csv'].includes(ext)) iconEmoji = '📊';
+                    else if (['pdf'].includes(ext)) iconEmoji = '📑';
+                    else if (['doc', 'docx'].includes(ext)) iconEmoji = '📝';
+
+                    fileHtml = `
+                        <div class="mt-3 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 shadow-xs">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base shrink-0">
+                                    ${iconEmoji}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold text-slate-800 truncate" title="${out.file_name || 'Attached File'}">${out.file_name || 'Download File'}</p>
+                                    <p class="text-[10px] text-slate-400 font-medium">${out.file_size || ''} ${ext ? '• ' + ext.toUpperCase() : ''}</p>
+                                </div>
+                            </div>
+                            <a href="${out.file_url}" target="_blank" download class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-xs shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                                View / Download
+                            </a>
+                        </div>
+                    `;
+
+                    if (isImage) {
+                        fileHtml += `
+                            <div class="mt-2 rounded-xl overflow-hidden border border-slate-200 max-h-48 bg-slate-100 flex items-center justify-center p-1">
+                                <a href="${out.file_url}" target="_blank">
+                                    <img src="${out.file_url}" alt="Preview" class="object-contain max-h-44 rounded-lg hover:opacity-95 transition">
+                                </a>
+                            </div>
+                        `;
+                    }
+                }
+
+                list.innerHTML += `
+                    <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:border-slate-300 transition">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider ${badgeClass}">
+                                    ${badgeLabel}
+                                </span>
+                                <span class="text-xs font-bold text-slate-700">${out.user_name}</span>
+                            </div>
+                            <span class="text-[11px] font-semibold text-slate-400">${out.created_at}</span>
+                        </div>
+                        <div class="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap bg-slate-50/70 p-3 rounded-xl border border-slate-100">${out.comment}</div>
+                        ${fileHtml}
+                    </div>
+                `;
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Error loading outputs.', 'error');
+            closeOutputsModal();
         });
     }
 
-    // End Active Task Directly from Row
-    function endActiveTaskDirect(taskId) {
-        const desc = prompt('Enter final task description (optional):');
-        if (desc === null) return; // User cancelled prompt
-
-        fetch('{{ url("daily-report/task") }}/' + taskId + '/end', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                description: desc
-            })
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-            else { showToast(data.message, 'error'); }
-        }).catch(err => {
-            showToast('An error occurred while ending the task.', 'error');
-        });
+    function closeOutputsModal() {
+        document.getElementById('outputs-modal').classList.add('hidden');
     }
 
     // History Modal Logic
@@ -916,8 +1356,221 @@
             btn.disabled = false;
         });
     }
-    // Auto-open comments modal if URL has open_comment parameter
+    // Auto-stop countdown, audio chime & desktop browser notifications
+    window.ACTIVE_TASK_AUTO_STOP_AT = @json(isset($activeTaskDeadline) && $activeTaskDeadline ? $activeTaskDeadline['deadline']->toIso8601String() : null);
+    window.ACTIVE_TASK_ID = @json($activeTask ? $activeTask->id : null);
+    window.ACTIVE_TASK_TITLE = @json($activeTask ? $activeTask->task_title : null);
+    window.ACTIVE_TASK_LABEL = @json(isset($activeTaskDeadline) && $activeTaskDeadline ? $activeTaskDeadline['label'] : null);
+
+    let autoStopTimerInterval = null;
+    let autoStopTriggered = false;
+    let titleFlashInterval = null;
+    const originalDocumentTitle = document.title;
+
+    function playAutoStopSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const playTone = (freq, start, duration) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + start);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + start + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + start);
+                osc.stop(audioCtx.currentTime + start + duration);
+            };
+
+            // 3 ascending chime tones, repeated for urgency
+            playTone(523.25, 0.0, 0.15); // C5
+            playTone(659.25, 0.18, 0.15); // E5
+            playTone(783.99, 0.36, 0.25); // G5
+
+            setTimeout(() => {
+                playTone(523.25, 0.0, 0.15);
+                playTone(659.25, 0.18, 0.15);
+                playTone(1046.50, 0.36, 0.35); // C6
+            }, 600);
+        } catch (e) {
+            console.warn('Audio chime play failed:', e);
+        }
+    }
+
+    function startTitleFlashing(flashText) {
+        if (titleFlashInterval) clearInterval(titleFlashInterval);
+        let isOriginal = false;
+        titleFlashInterval = setInterval(() => {
+            document.title = isOriginal ? originalDocumentTitle : flashText;
+            isOriginal = !isOriginal;
+        }, 800);
+
+        const stopFlashing = () => {
+            if (titleFlashInterval) {
+                clearInterval(titleFlashInterval);
+                titleFlashInterval = null;
+                document.title = originalDocumentTitle;
+            }
+            window.removeEventListener('focus', stopFlashing);
+            window.removeEventListener('click', stopFlashing);
+        };
+        window.addEventListener('focus', stopFlashing);
+        window.addEventListener('click', stopFlashing);
+    }
+
+    function checkNotificationPermissionBanner() {
+        if ("Notification" in window) {
+            const banner = document.getElementById('notification-permission-banner');
+            if (Notification.permission === "default" && banner) {
+                banner.classList.remove('hidden');
+            } else if (Notification.permission === "granted" && banner) {
+                banner.classList.add('hidden');
+            }
+        }
+    }
+
+    function requestBrowserNotificationPermission(isUserClick = false) {
+        if ("Notification" in window) {
+            Notification.requestPermission().then(perm => {
+                const banner = document.getElementById('notification-permission-banner');
+                if (perm === 'granted') {
+                    if (banner) banner.classList.add('hidden');
+                    if (isUserClick) showToast('Browser desktop notifications enabled successfully!', 'success');
+                } else if (isUserClick) {
+                    showToast('Notification permission was not granted.', 'warning');
+                }
+            });
+        }
+    }
+
+    function showAutoStopBrowserNotification(taskTitle, reason) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                const title = '⚠️ Task Auto-Stopped!';
+                const message = `Task "${taskTitle || 'Your task'}" has stopped (${reason || 'Cutoff reached'}). Click here to submit your work outcome.`;
+                const notif = new Notification(title, {
+                    body: message,
+                    icon: '/images/logo.png',
+                    tag: 'task-auto-stop',
+                    requireInteraction: true // Stays on screen until clicked
+                });
+
+                notif.onclick = function() {
+                    window.focus();
+                    this.close();
+                };
+            } catch (e) {
+                console.warn('Notification error:', e);
+            }
+        } else if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }
+
+    function initAutoStopCountdown() {
+        if (!window.ACTIVE_TASK_AUTO_STOP_AT) return;
+
+        const deadlineTime = new Date(window.ACTIVE_TASK_AUTO_STOP_AT).getTime();
+        const timerEl = document.getElementById('active-task-countdown');
+
+        function update() {
+            const now = new Date().getTime();
+            const diff = deadlineTime - now;
+
+            if (diff <= 0) {
+                if (timerEl) timerEl.textContent = '00:00:00';
+                clearInterval(autoStopTimerInterval);
+                triggerAutoStopModal();
+                return;
+            }
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const pad = (n) => String(n).padStart(2, '0');
+            if (timerEl) {
+                timerEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            }
+        }
+
+        update();
+        autoStopTimerInterval = setInterval(update, 1000);
+    }
+
+    function triggerAutoStopModal() {
+        if (autoStopTriggered) return;
+        autoStopTriggered = true;
+
+        // 1. Play audible sound
+        playAutoStopSound();
+
+        // 2. Browser Desktop Notification (Alert on Desktop even if minimized / another software open)
+        showAutoStopBrowserNotification(window.ACTIVE_TASK_TITLE, window.ACTIVE_TASK_LABEL);
+
+        // 3. Bring window to front
+        window.focus();
+
+        // 4. Flash title bar
+        startTitleFlashing('⚠️ TASK STOPPED - SUBMIT OUTCOME!');
+
+        // 5. Backend sync & open modal
+        fetch('{{ route("daily-report.task.check-auto-stop") }}', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(`Task Auto-Stopped! ${window.ACTIVE_TASK_LABEL || 'Scheduled cutoff'} reached. Please submit your work outcome.`, 'warning');
+            openTaskActionModal(window.ACTIVE_TASK_ID, 'stop', window.ACTIVE_TASK_TITLE);
+        })
+        .catch(err => {
+            openTaskActionModal(window.ACTIVE_TASK_ID, 'stop', window.ACTIVE_TASK_TITLE);
+        });
+    }
+
+    // Periodic check every 30 seconds
+    setInterval(() => {
+        fetch('{{ route("daily-report.task.check-auto-stop") }}', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.stopped_count > 0) {
+                playAutoStopSound();
+                showAutoStopBrowserNotification(data.pending_task ? data.pending_task.task_title : 'Your Task', 'Scheduled cutoff reached');
+                window.focus();
+                startTitleFlashing('⚠️ TASK STOPPED - SUBMIT OUTCOME!');
+
+                const modal = document.getElementById('task-action-modal');
+                if (modal && modal.classList.contains('hidden')) {
+                    showToast('A task was automatically stopped. Please submit its work outcome.', 'warning');
+                    if (data.pending_task) {
+                        openTaskActionModal(data.pending_task.id, 'stop', data.pending_task.task_title);
+                    } else {
+                        setTimeout(() => location.reload(), 800);
+                    }
+                }
+            }
+        })
+        .catch(() => {});
+    }, 30000);
+
+    // Initialization on DOMContentLoaded
     document.addEventListener('DOMContentLoaded', () => {
+        checkNotificationPermissionBanner();
+        initAutoStopCountdown();
+
+        @if(isset($pendingOutputTask) && $pendingOutputTask)
+            setTimeout(() => {
+                playAutoStopSound();
+                showAutoStopBrowserNotification('{{ addslashes($pendingOutputTask->task_title) }}', 'Outcome Required');
+                window.focus();
+                startTitleFlashing('⚠️ TASK STOPPED - SUBMIT OUTCOME!');
+                openTaskActionModal({{ $pendingOutputTask->id }}, 'stop', '{{ addslashes($pendingOutputTask->task_title) }}');
+            }, 300);
+        @endif
+
         const urlParams = new URLSearchParams(window.location.search);
         const openCommentTaskId = urlParams.get('open_comment');
         if (openCommentTaskId && typeof openCommentsModal === 'function') {

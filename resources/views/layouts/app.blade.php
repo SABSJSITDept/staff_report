@@ -791,6 +791,7 @@
             if (type === 'it_ticket_created') borderColor = '#10b981'; // Emerald
             if (type === 'it_ticket_status') borderColor = '#f59e0b'; // Amber
             if (type === 'it_ticket_time') borderColor = '#3b82f6'; // Blue
+            if (type === 'task_auto_stopped') borderColor = '#f43f5e'; // Rose
             toast.style.borderLeftColor = borderColor;
 
             toast.innerHTML = `
@@ -833,9 +834,9 @@
                             const latest = data.notifications[0];
                             if (latest && !latest.is_read) {
                                 // 1. Trigger desktop system notification (WhatsApp style, works even when tab is background)
-                                showDesktopNotification(latest.title, latest.message, latest.id);
+                                showDesktopNotification(latest.title, latest.message, latest.id, latest.url);
                                 // 2. Trigger beautifully styled in-app Toast notification (bottom right corner)
-                                showInAppToast(latest.title, latest.message, `/notifications/${latest.id}/read`, latest.type);
+                                showInAppToast(latest.title, latest.message, latest.url || `/notifications/${latest.id}/read`, latest.type);
                             }
                         }
                     }
@@ -844,17 +845,20 @@
                 .catch(error => console.error('Error fetching notifications:', error));
         }
 
-        function showDesktopNotification(title, message, id) {
+        function showDesktopNotification(title, message, id, targetUrl) {
             if ("Notification" in window && Notification.permission === "granted") {
+                const url = targetUrl || `/notifications/${id}/read`;
                 const notification = new Notification(title, {
                     body: message,
-                    tag: 'ticket-' + id,
-                    requireInteraction: false
+                    icon: '/images/logo.png',
+                    tag: 'notif-' + id,
+                    requireInteraction: true
                 });
                 
                 notification.onclick = function() {
                     window.focus();
-                    window.location.href = `/notifications/${id}/read`;
+                    window.location.href = url;
+                    this.close();
                 };
             }
         }
@@ -911,6 +915,8 @@
                     return `<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 text-amber-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></span>`;
                 case 'it_ticket_time':
                     return `<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 text-blue-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span>`;
+                case 'task_auto_stopped':
+                    return `<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-rose-50 text-rose-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></span>`;
                 default:
                     return `<span class="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-50 text-gray-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></span>`;
             }

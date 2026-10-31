@@ -217,6 +217,9 @@ Route::middleware('auth')->prefix('daily-report')->name('daily-report.')->group(
     Route::post('/assign-task', [DailyReportController::class, 'assignTask'])->name('assign-task');
     Route::get('/task/{task}/comments', [\App\Http\Controllers\TaskCommentController::class, 'index'])->name('task.comments.index');
     Route::post('/task/{task}/comments', [\App\Http\Controllers\TaskCommentController::class, 'store'])->name('task.comments.store');
+    Route::get('/task/check-auto-stop', [DailyReportController::class, 'checkAutoStop'])->name('task.check-auto-stop');
+    Route::get('/task/{task}/outputs', [DailyReportController::class, 'getTaskOutputs'])->name('task.outputs');
+    Route::post('/task/{task}/output', [DailyReportController::class, 'submitTaskOutput'])->name('task.output.submit');
 
     Route::post('/',        [DailyReportController::class, 'store'])->name('store');
     Route::get('/{dailyReport}',        [DailyReportController::class, 'show'])->name('show');
